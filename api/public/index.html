@@ -3,56 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>بوت التجارة DZ</title>
+    <title>أداة تسعير COD Pro + المستشار الذكي</title>
     <style>
-        body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .chat-container { width: 90%; max-width: 400px; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); height: 80vh; display: flex; flex-direction: column; }
-        #chat-box { flex: 1; overflow-y: auto; margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
-        .message { margin: 8px 0; padding: 8px 12px; border-radius: 15px; max-width: 80%; }
-        .user { background: #0084ff; color: white; align-self: flex-end; margin-right: auto; }
-        .bot { background: #e4e6eb; color: black; align-self: flex-start; }
-        .input-area { display: flex; gap: 5px; }
-        input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
-        button { padding: 10px 15px; background: #0084ff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        :root { --primary: #2563eb; --bg: #f3f4f6; --card: #ffffff; --text: #1f2937; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: var(--card); padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: var(--primary); margin-bottom: 30px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9em; }
+        input { width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 16px; outline: none; transition: 0.3s; box-sizing: border-box; }
+        input:focus { border-color: var(--primary); }
+        .results { background: #1e293b; color: white; padding: 20px; border-radius: 15px; margin-top: 20px; }
+        .res-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 1.1em; }
+        .total { font-size: 1.5em; font-weight: bold; border-top: 1px solid #475569; padding-top: 10px; color: #4ade80; }
+        
+        /* زر الشات العائم */
+        .chat-btn { position: fixed; bottom: 20px; left: 20px; width: 60px; height: 60px; background: var(--primary); color: white; border-radius: 50%; border: none; font-size: 30px; cursor: pointer; box-shadow: 0 5px 15px rgba(37, 99, 235, 0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; transition: transform 0.3s; }
+        .chat-btn:hover { transform: scale(1.1); }
+        
+        /* نافذة الشات */
+        .chat-window { display: none; position: fixed; bottom: 90px; left: 20px; width: 350px; height: 500px; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); flex-direction: column; overflow: hidden; z-index: 1001; border: 1px solid #e5e7eb; }
+        .chat-header { background: var(--primary); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+        .chat-body { flex: 1; padding: 15px; overflow-y: auto; background: #f9fafb; font-size: 0.9em; }
+        .chat-footer { padding: 10px; border-top: 1px solid #eee; display: flex; gap: 5px; background: white; }
+        .chat-footer input { border: 1px solid #ddd; padding: 10px; border-radius: 20px; }
+        .msg { padding: 8px 12px; margin: 5px 0; border-radius: 15px; max-width: 80%; line-height: 1.4; }
+        .user-msg { background: var(--primary); color: white; align-self: flex-end; margin-left: auto; }
+        .bot-msg { background: #e5e7eb; color: black; align-self: flex-start; }
     </style>
 </head>
 <body>
-<div class="chat-container">
-    <h3 style="text-align: center;">مساعد التجارة الذكي 🇩🇿</h3>
-    <div id="chat-box" style="display: flex; flex-direction: column;"></div>
-    <div class="input-area">
-        <input type="text" id="user-input" placeholder="اكتب سؤالك..." />
-        <button onclick="sendMessage()" id="send-btn">إرسال</button>
+
+<div class="container">
+    <h1>حاسبة الأرباح 🇩🇿 COD</h1>
+    
+    <div class="grid">
+        <div class="input-group">
+            <label>سعر البيع (DZD)</label>
+            <input type="number" id="selling_price" oninput="calculate()" placeholder="مثلاً 5900">
+        </div>
+        <div class="input-group">
+            <label>سعر الشراء (DZD)</label>
+            <input type="number" id="product_cost" oninput="calculate()" placeholder="مثلاً 2500">
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="input-group">
+            <label>تكلفة الإعلانات (للمبيعة)</label>
+            <input type="number" id="ad_cost" oninput="calculate()" placeholder="مثلاً 600">
+        </div>
+        <div class="input-group">
+            <label>تكلفة التوصيل (DZD)</label>
+            <input type="number" id="delivery_cost" oninput="calculate()" placeholder="مثلاً 800">
+        </div>
+    </div>
+
+    <div class="input-group">
+        <label>نسبة التأكيد (Confirmation %)</label>
+        <input type="number" id="conf_rate" oninput="calculate()" value="70" placeholder="70">
+    </div>
+
+    <div class="results">
+        <div class="res-row"><span>الربح الإجمالي (قبل الروتور):</span> <span id="gross_profit">0 DZD</span></div>
+        <div class="res-row"><span>خسارة الروتور (Retour):</span> <span id="return_loss" style="color: #f87171;">0 DZD</span></div>
+        <div class="res-row total"><span>الربح الصافي:</span> <span id="net_profit">0 DZD</span></div>
+        <div class="res-row" style="margin-top: 10px; font-size: 0.9em; color: #94a3b8;">
+            <span>نسبة الربح (ROI):</span> <span id="roi_res">0%</span>
+        </div>
     </div>
 </div>
-<script>
-    async function sendMessage() {
-        const input = document.getElementById('user-input');
-        const btn = document.getElementById('send-btn');
-        const chatBox = document.getElementById('chat-box');
-        const text = input.value.trim();
-        if (!text) return;
 
-        chatBox.innerHTML += `<div class="message user">${text}</div>`;
+<!-- الشات بوت -->
+<button class="chat-btn" onclick="toggleChat()">💬</button>
+
+<div class="chat-window" id="chatWindow">
+    <div class="chat-header">
+        <span>المستشار الذكي 🤖</span>
+        <span style="cursor: pointer;" onclick="toggleChat()">✖</span>
+    </div>
+    <div class="chat-body" id="chatBody">
+        <div class="msg bot-msg">مرحبا! أنا هنا باش نعاونك في حساباتك أو استراتيجية البيع. واش تحب تسقسي؟</div>
+    </div>
+    <div class="chat-footer">
+        <input type="text" id="chatInput" placeholder="اكتب سؤالك..." onkeypress="handleEnter(event)">
+        <button onclick="sendMessage()" style="background:none; border:none; cursor:pointer;">➤</button>
+    </div>
+</div>
+
+<script>
+    // 1. كود الآلة الحاسبة
+    function calculate() {
+        // جلب القيم
+        let price = parseFloat(document.getElementById('selling_price').value) || 0;
+        let cost = parseFloat(document.getElementById('product_cost').value) || 0;
+        let ad = parseFloat(document.getElementById('ad_cost').value) || 0;
+        let delivery = parseFloat(document.getElementById('delivery_cost').value) || 0;
+        let rate = parseFloat(document.getElementById('conf_rate').value) || 0;
+
+        // الحسابات
+        // 1. الربح في حالة التوصيل الناجح
+        let profit_per_sale = price - cost - delivery - ad;
+        
+        // 2. الخسارة في حالة الروتور (نخسر الإعلان + التوصيل + وتغليف أحياناً)
+        // سنفترض خسارة الإعلان + نصف التوصيل (روتور)
+        let loss_per_return = ad + (delivery * 0.5); 
+
+        // 3. الحساب بناء على 100 طلبية لتسهيل الفهم
+        let delivered = 100 * (rate / 100);
+        let returned = 100 - delivered;
+
+        let total_gain = delivered * profit_per_sale;
+        let total_loss = returned * loss_per_return;
+        let final_net = (total_gain - total_loss) / 100; // الربح المتوسط للمبيعة الواحدة
+
+        // عرض النتائج
+        document.getElementById('gross_profit').innerText = profit_per_sale.toFixed(0) + " DZD";
+        document.getElementById('return_loss').innerText = "-" + loss_per_return.toFixed(0) + " DZD";
+        document.getElementById('net_profit').innerText = final_net.toFixed(0) + " DZD";
+        
+        let roi = 0;
+        if ((cost + ad + delivery) > 0) {
+            roi = (final_net / (cost + ad + delivery)) * 100;
+        }
+        document.getElementById('roi_res').innerText = roi.toFixed(1) + "%";
+    }
+
+    // 2. كود الشات بوت
+    function toggleChat() {
+        let win = document.getElementById('chatWindow');
+        win.style.display = win.style.display === 'flex' ? 'none' : 'flex';
+    }
+
+    function handleEnter(e) {
+        if (e.key === 'Enter') sendMessage();
+    }
+
+    async function sendMessage() {
+        let input = document.getElementById('chatInput');
+        let body = document.getElementById('chatBody');
+        let txt = input.value.trim();
+        if (!txt) return;
+
+        // إضافة رسالة المستخدم
+        body.innerHTML += `<div class="msg user-msg">${txt}</div>`;
         input.value = '';
-        btn.disabled = true;
-        btn.innerText = '...';
+        body.scrollTop = body.scrollHeight;
 
         try {
-            const res = await fetch('/api/chat', {
+            // الاتصال بالسيرفر
+            let res = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: text })
+                body: JSON.stringify({ message: txt })
             });
-            const data = await res.json();
-            chatBox.innerHTML += `<div class="message bot">${data.reply}</div>`;
-        } catch (e) {
-            chatBox.innerHTML += `<div class="message bot" style="color:red">خطأ في الاتصال</div>`;
+
+            let data = await res.json();
+            
+            // إضافة رد البوت
+            body.innerHTML += `<div class="msg bot-msg">${data.reply || "حدث خطأ"}</div>`;
+        } catch (error) {
+            body.innerHTML += `<div class="msg bot-msg" style="color:red">تأكد من إعدادات API</div>`;
         }
-        btn.disabled = false;
-        btn.innerText = 'إرسال';
-        chatBox.scrollTop = chatBox.scrollHeight;
+        body.scrollTop = body.scrollHeight;
     }
 </script>
+
 </body>
 </html>
