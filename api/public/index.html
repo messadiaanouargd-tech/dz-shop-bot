@@ -1,174 +1,2277 @@
+<!-- ===================== PART 1 / 7 ===================== -->
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>أداة تسعير COD Pro + المستشار الذكي</title>
-    <style>
-        :root { --primary: #2563eb; --bg: #f3f4f6; --card: #ffffff; --text: #1f2937; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; background: var(--card); padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: var(--primary); margin-bottom: 30px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .input-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9em; }
-        input { width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 16px; outline: none; transition: 0.3s; box-sizing: border-box; }
-        input:focus { border-color: var(--primary); }
-        .results { background: #1e293b; color: white; padding: 20px; border-radius: 15px; margin-top: 20px; }
-        .res-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 1.1em; }
-        .total { font-size: 1.5em; font-weight: bold; border-top: 1px solid #475569; padding-top: 10px; color: #4ade80; }
-        
-        /* زر الشات العائم */
-        .chat-btn { position: fixed; bottom: 20px; left: 20px; width: 60px; height: 60px; background: var(--primary); color: white; border-radius: 50%; border: none; font-size: 30px; cursor: pointer; box-shadow: 0 5px 15px rgba(37, 99, 235, 0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; transition: transform 0.3s; }
-        .chat-btn:hover { transform: scale(1.1); }
-        
-        /* نافذة الشات */
-        .chat-window { display: none; position: fixed; bottom: 90px; left: 20px; width: 350px; height: 500px; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); flex-direction: column; overflow: hidden; z-index: 1001; border: 1px solid #e5e7eb; }
-        .chat-header { background: var(--primary); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
-        .chat-body { flex: 1; padding: 15px; overflow-y: auto; background: #f9fafb; font-size: 0.9em; }
-        .chat-footer { padding: 10px; border-top: 1px solid #eee; display: flex; gap: 5px; background: white; }
-        .chat-footer input { border: 1px solid #ddd; padding: 10px; border-radius: 20px; }
-        .msg { padding: 8px 12px; margin: 5px 0; border-radius: 15px; max-width: 80%; line-height: 1.4; }
-        .user-msg { background: var(--primary); color: white; align-self: flex-end; margin-left: auto; }
-        .bot-msg { background: #e5e7eb; color: black; align-self: flex-start; }
-    </style>
-</head>
-<body>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#070812" />
+  <title>PRO • COD Pricing Tool</title>
 
-<div class="container">
-    <h1>حاسبة الأرباح 🇩🇿 COD</h1>
-    
-    <div class="grid">
-        <div class="input-group">
-            <label>سعر البيع (DZD)</label>
-            <input type="number" id="selling_price" oninput="calculate()" placeholder="مثلاً 5900">
-        </div>
-        <div class="input-group">
-            <label>سعر الشراء (DZD)</label>
-            <input type="number" id="product_cost" oninput="calculate()" placeholder="مثلاً 2500">
-        </div>
-    </div>
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
 
-    <div class="grid">
-        <div class="input-group">
-            <label>تكلفة الإعلانات (للمبيعة)</label>
-            <input type="number" id="ad_cost" oninput="calculate()" placeholder="مثلاً 600">
-        </div>
-        <div class="input-group">
-            <label>تكلفة التوصيل (DZD)</label>
-            <input type="number" id="delivery_cost" oninput="calculate()" placeholder="مثلاً 800">
-        </div>
-    </div>
+  <!-- Chart.js + PDF libs -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-    <div class="input-group">
-        <label>نسبة التأكيد (Confirmation %)</label>
-        <input type="number" id="conf_rate" oninput="calculate()" value="70" placeholder="70">
-    </div>
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet"/>
 
-    <div class="results">
-        <div class="res-row"><span>الربح الإجمالي (قبل الروتور):</span> <span id="gross_profit">0 DZD</span></div>
-        <div class="res-row"><span>خسارة الروتور (Retour):</span> <span id="return_loss" style="color: #f87171;">0 DZD</span></div>
-        <div class="res-row total"><span>الربح الصافي:</span> <span id="net_profit">0 DZD</span></div>
-        <div class="res-row" style="margin-top: 10px; font-size: 0.9em; color: #94a3b8;">
-            <span>نسبة الربح (ROI):</span> <span id="roi_res">0%</span>
-        </div>
-    </div>
-</div>
+  <style>
+    :root{
+      --bg0:#070812;
+      --bg1:#060713;
+      --text:rgba(255,255,255,.92);
+      --muted:rgba(255,255,255,.66);
+      --stroke:rgba(255,255,255,.12);
+      --glass:rgba(255,255,255,.06);
+      --glass2:rgba(255,255,255,.10);
+      --brand1:#8b5cf6;
+      --brand2:#22d3ee;
+      --brand3:#60a5fa;
+      --good:#22c55e;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+      --shadow:0 24px 70px rgba(0,0,0,.45);
+    }
+    html,body{height:100%}
+    body{
+      margin:0;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 700px at 70% 10%, rgba(139,92,246,.18), transparent 60%),
+        radial-gradient(1000px 600px at 10% 35%, rgba(34,211,238,.14), transparent 55%),
+        radial-gradient(900px 700px at 50% 100%, rgba(96,165,250,.12), transparent 60%),
+        linear-gradient(180deg,var(--bg0),var(--bg1));
+      font-family:Tajawal,Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      overflow-x:hidden;
+    }
+    .glass{
+      background:linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      border:1px solid var(--stroke);
+      box-shadow:var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+    .glass-strong{
+      background:linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.05));
+      border:1px solid rgba(255,255,255,.16);
+      box-shadow:0 26px 90px rgba(0,0,0,.52);
+      backdrop-filter: blur(18px);
+    }
+    .soft-border{position:relative}
+    .soft-border:before{
+      content:"";
+      position:absolute;
+      inset:-1px;
+      border-radius:18px;
+      padding:1px;
+      background:linear-gradient(135deg, rgba(139,92,246,.55), rgba(34,211,238,.35), rgba(96,165,250,.45));
+      -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite:xor;
+      mask-composite:exclude;
+      opacity:.55;
+      pointer-events:none;
+    }
+    .gradient-text{
+      background:linear-gradient(135deg,var(--brand1),var(--brand2),var(--brand3));
+      -webkit-background-clip:text;background-clip:text;
+      -webkit-text-fill-color:transparent;
+    }
+    .premium-input{
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.14);
+      color:var(--text);
+      outline:none;
+      transition:.18s ease;
+    }
+    .premium-input:focus{
+      border-color:rgba(139,92,246,.65);
+      box-shadow:0 0 0 4px rgba(139,92,246,.18);
+      background:rgba(255,255,255,.08);
+    }
+    .btn{
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(255,255,255,.08);
+      transition:.2s ease;
+    }
+    .btn:hover{background:rgba(255,255,255,.12);transform:translateY(-1px)}
+    .btn.active{
+      background:linear-gradient(135deg, rgba(139,92,246,.95), rgba(34,211,238,.45));
+      border-color:rgba(139,92,246,.65);
+      box-shadow:0 14px 45px rgba(139,92,246,.22);
+    }
+    .btn-gradient{
+      border:1px solid rgba(255,255,255,.18);
+      background:linear-gradient(135deg, rgba(139,92,246,.92), rgba(34,211,238,.45));
+      border-radius:16px;
+      font-weight:900;
+      transition:.25s ease;
+    }
+    .btn-gradient:hover{
+      transform:translateY(-2px);
+      box-shadow:0 30px 90px rgba(34,211,238,.18), 0 26px 80px rgba(139,92,246,.16);
+    }
+    .tab-button{
+      border:1px solid transparent;
+      color:rgba(255,255,255,.62);
+      padding:10px 16px;
+      border-radius:14px;
+      transition:.2s ease;
+      white-space:nowrap;
+    }
+    .tab-button:hover{
+      color:rgba(255,255,255,.92);
+      background:rgba(255,255,255,.06);
+      border-color:rgba(255,255,255,.10);
+    }
+    .tab-button.active{
+      color:rgba(255,255,255,.95);
+      background:rgba(255,255,255,.10);
+      border-color:rgba(139,92,246,.45);
+      box-shadow:0 14px 45px rgba(139,92,246,.18);
+    }
+    .tab-content{display:none}
+    .tab-content.active{display:block}
+    .stat-card{
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:18px;
+      padding:22px;
+      transition:.25s ease;
+      backdrop-filter: blur(12px);
+    }
+    .stat-card:hover{
+      transform:translateY(-3px);
+      border-color:rgba(139,92,246,.35);
+      background:rgba(255,255,255,.08);
+      box-shadow:0 22px 70px rgba(0,0,0,.35);
+    }
+    .chart-frame{
+      border-radius:18px;
+      overflow:hidden;
+      background:linear-gradient(135deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow:0 26px 90px rgba(0,0,0,.50);
+    }
+    .chart-inner{padding:14px}
+    .chart-container{position:relative;height:320px}
+    .no-print{}
+    @media print{
+      .no-print{display:none !important;}
+      body{background:#fff !important;color:#000 !important;}
+    }
+    /* Scenario buttons */
+    .scenario-btn{
+      background: linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      border: 1px solid rgba(255,255,255,.14);
+      backdrop-filter: blur(14px);
+      transition: .25s ease;
+      box-shadow:
+        0 18px 60px rgba(0,0,0,.25),
+        0 0 0 1px rgba(255,255,255,.06),
+        0 0 22px rgba(139,92,246,.14),
+        0 0 18px rgba(34,211,238,.10);
+    }
+    .scenario-btn:hover{
+      transform: translateY(-2px);
+      border-color: rgba(139,92,246,.45);
+      box-shadow:
+        0 26px 90px rgba(0,0,0,.32),
+        0 0 0 1px rgba(255,255,255,.08),
+        0 0 34px rgba(139,92,246,.22),
+        0 0 26px rgba(34,211,238,.16);
+    }
+    .scenario-btn:active{
+      transform: translateY(0px);
+    }
 
-<!-- الشات بوت -->
-<button class="chat-btn" onclick="toggleChat()">💬</button>
+    /* تكبير الخطوط في كل الأداة */
+    body {
+      font-size: 16px;
+    }
+    .premium-input, input, select {
+      font-size: 16px !important;
+    }
+    label {
+      font-size: 15px !important;
+    }
+    .stat-card {
+      font-size: 16px;
+    }
+    h1, h2, h3, h4 {
+      font-size: 1.1em !important;
+    }
+  </style>
 
-<div class="chat-window" id="chatWindow">
-    <div class="chat-header">
-        <span>المستشار الذكي 🤖</span>
-        <span style="cursor: pointer;" onclick="toggleChat()">✖</span>
-    </div>
-    <div class="chat-body" id="chatBody">
-        <div class="msg bot-msg">مرحبا! أنا هنا باش نعاونك في حساباتك أو استراتيجية البيع. واش تحب تسقسي؟</div>
-    </div>
-    <div class="chat-footer">
-        <input type="text" id="chatInput" placeholder="اكتب سؤالك..." onkeypress="handleEnter(event)">
-        <button onclick="sendMessage()" style="background:none; border:none; cursor:pointer;">➤</button>
-    </div>
-</div>
+  <!-- ===================== GOOGLE ANALYTICS 4 ===================== -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-FLY2GHLT0X"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-FLY2GHLT0X');
+  </script>
+  <!-- ============================================================== -->
 
-<script>
-    // 1. كود الآلة الحاسبة
-    function calculate() {
-        // جلب القيم
-        let price = parseFloat(document.getElementById('selling_price').value) || 0;
-        let cost = parseFloat(document.getElementById('product_cost').value) || 0;
-        let ad = parseFloat(document.getElementById('ad_cost').value) || 0;
-        let delivery = parseFloat(document.getElementById('delivery_cost').value) || 0;
-        let rate = parseFloat(document.getElementById('conf_rate').value) || 0;
+  <!-- ===================== FINAL VERSION - 24H WITH ANALYTICS ===================== -->
+  <script>
+    (function() {
+      const TRIAL_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+      const WHATSAPP_NUMBER = "213540018556";
+      const PRICE = "200,000 دج";
 
-        // الحسابات
-        // 1. الربح في حالة التوصيل الناجح
-        let profit_per_sale = price - cost - delivery - ad;
-        
-        // 2. الخسارة في حالة الروتور (نخسر الإعلان + التوصيل + وتغليف أحياناً)
-        // سنفترض خسارة الإعلان + نصف التوصيل (روتور)
-        let loss_per_return = ad + (delivery * 0.5); 
+      const COOKIE_NAME = 'pricingToolFirstUse';
+      const STORAGE_NAME = 'pricingToolStartTime';
+      const LICENSE_STORAGE = 'pricingToolLicense';
+      const VALID_LICENSE_KEYS = [
+        'CODPRO-8X2K-9M4L-7N6P',
+        'CODGLD-5Q3R-1W8T-4Y9Z',
+        'CODULT-2A6B-3C8D-9E5F',
+        'CODVIP-7H4J-6K2M-8N1L',
+        'CODMAX-9P5Q-4R7S-2T8V'
+      ];
 
-        // 3. الحساب بناء على 100 طلبية لتسهيل الفهم
-        let delivered = 100 * (rate / 100);
-        let returned = 100 - delivered;
+      function validateLicenseKey(key) {
+        if (!key || key.length < 10) return false;
+        return VALID_LICENSE_KEYS.includes(key.toUpperCase().trim());
+      }
 
-        let total_gain = delivered * profit_per_sale;
-        let total_loss = returned * loss_per_return;
-        let final_net = (total_gain - total_loss) / 100; // الربح المتوسط للمبيعة الواحدة
+      function activateLicense(key) {
+        const licenseData = { key: key, activatedAt: Date.now() };
+        localStorage.setItem(LICENSE_STORAGE, JSON.stringify(licenseData));
+        setCookie(LICENSE_STORAGE, JSON.stringify(licenseData), 3650);
 
-        // عرض النتائج
-        document.getElementById('gross_profit').innerText = profit_per_sale.toFixed(0) + " DZD";
-        document.getElementById('return_loss').innerText = "-" + loss_per_return.toFixed(0) + " DZD";
-        document.getElementById('net_profit').innerText = final_net.toFixed(0) + " DZD";
-        
-        let roi = 0;
-        if ((cost + ad + delivery) > 0) {
-            roi = (final_net / (cost + ad + delivery)) * 100;
+        if (typeof gtag !== 'undefined') {
+          gtag('event', 'license_activated', {
+            'event_category': 'License',
+            'event_label': 'License Activated Successfully'
+          });
         }
-        document.getElementById('roi_res').innerText = roi.toFixed(1) + "%";
-    }
+      }
 
-    // 2. كود الشات بوت
-    function toggleChat() {
-        let win = document.getElementById('chatWindow');
-        win.style.display = win.style.display === 'flex' ? 'none' : 'flex';
-    }
+      function checkLicense() {
+        const licenseCookie = getCookie(LICENSE_STORAGE);
+        const licenseStorage = localStorage.getItem(LICENSE_STORAGE);
 
-    function handleEnter(e) {
-        if (e.key === 'Enter') sendMessage();
-    }
+        if (licenseCookie || licenseStorage) {
+          try {
+            const license = JSON.parse(licenseCookie || licenseStorage);
+            if (validateLicenseKey(license.key)) return true;
+          } catch(e) {}
+        }
+        return false;
+      }
 
-    async function sendMessage() {
-        let input = document.getElementById('chatInput');
-        let body = document.getElementById('chatBody');
-        let txt = input.value.trim();
+      function setCookie(name, value, days) {
+        const date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        document.cookie = name + "=" + value + ";expires=" + date.toUTCString() + ";path=/;SameSite=Strict";
+      }
+
+      function getCookie(name) {
+        const nameEQ = name + "=";
+        const ca = document.cookie.split(';');
+        for(let i = 0; i < ca.length; i++) {
+          let c = ca[i].trim();
+          if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length);
+        }
+        return null;
+      }
+
+      function checkTrialStatus() {
+        let firstVisit = getCookie(COOKIE_NAME) || localStorage.getItem(STORAGE_NAME);
+        const currentTime = Date.now();
+
+        if (!firstVisit) {
+          const visitTime = currentTime.toString();
+          setCookie(COOKIE_NAME, visitTime, 365);
+          localStorage.setItem(STORAGE_NAME, visitTime);
+
+          if (typeof gtag !== 'undefined') {
+            gtag('event', 'trial_started', {
+              'event_category': 'Trial',
+              'event_label': 'New Trial Started'
+            });
+          }
+
+          return { isExpired: false, timeLeft: TRIAL_DURATION };
+        }
+
+        const firstVisitTime = parseInt(firstVisit);
+        const timeElapsed = currentTime - firstVisitTime;
+        const timeLeft = TRIAL_DURATION - timeElapsed;
+
+        return {
+          isExpired: timeElapsed >= TRIAL_DURATION,
+          timeLeft: Math.max(0, timeLeft)
+        };
+      }
+
+      function disableAllInputs() {
+        setTimeout(() => {
+          const inputs = document.querySelectorAll('input:not(.license-input), textarea, select, button:not(.license-btn):not(.whatsapp-btn)');
+          inputs.forEach(input => {
+            input.disabled = true;
+            input.style.opacity = '0.5';
+            input.style.cursor = 'not-allowed';
+          });
+        }, 100);
+      }
+
+      function isIncognitoMode() {
+        return new Promise((resolve) => {
+          try {
+            localStorage.setItem('incognito_test', '1');
+            localStorage.removeItem('incognito_test');
+
+            if ('storage' in navigator && 'estimate' in navigator.storage) {
+              navigator.storage.estimate().then(({quota}) => {
+                resolve(quota < 120000000);
+              }).catch(() => resolve(false));
+            } else {
+              resolve(false);
+            }
+          } catch(e) {
+            resolve(true);
+          }
+        });
+      }
+
+      function disableToolCompletely() {
+        const style = document.createElement('style');
+        style.textContent = `
+          input, textarea, select, button {
+            pointer-events: none !important;
+            opacity: 0.3 !important;
+            cursor: not-allowed !important;
+          }
+        `;
+        document.head.appendChild(style);
+
+        document.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); }, true);
+        document.addEventListener('keydown', e => { e.preventDefault(); e.stopPropagation(); }, true);
+      }
+
+      function showIncognitoBlockScreen() {
+        if (typeof gtag !== 'undefined') {
+          gtag('event', 'incognito_blocked', {
+            'event_category': 'Security',
+            'event_label': 'Incognito Mode Blocked'
+          });
+        }
+
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+          position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+          background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(15px);
+          z-index: 999999; display: flex; align-items: center; justify-content: center;
+        `;
+
+        overlay.innerHTML = `
+          <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(220, 38, 38, 0.95));
+            border: 3px solid rgba(255, 255, 255, 0.3); border-radius: 24px; padding: 48px;
+            max-width: 500px; text-align: center; box-shadow: 0 24px 70px rgba(0, 0, 0, 0.8);">
+            <div style="font-size: 80px; margin-bottom: 24px;">🚫</div>
+            <h2 style="font-size: 32px; font-weight: 900; margin-bottom: 16px; color: #fff;">
+              التصفح المخفي محظور!
+            </h2>
+            <p style="font-size: 18px; color: rgba(255, 255, 255, 0.95); margin-bottom: 32px; line-height: 1.8;">
+              هذه الأداة لا تعمل في وضع التصفح المخفي.<br><br>
+              <strong>افتح الأداة في نافذة عادية للمتابعة.</strong>
+            </p>
+          </div>
+        `;
+
+        document.body.appendChild(overlay);
+      }
+
+      function createTrialHeader() {
+        const header = document.createElement('div');
+        header.id = 'trialHeader';
+        header.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          background: linear-gradient(
+            135deg,
+            rgba(139, 92, 246, 0.08),
+            rgba(34, 211, 238, 0.08)
+          );
+          backdrop-filter: blur(10px);
+          border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+          padding: 12px 24px;
+          z-index: 9998;
+          box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 20px;
+          flex-wrap: wrap;
+        `;
+
+        const status = checkTrialStatus();
+        const hours = Math.floor(status.timeLeft / (1000 * 60 * 60));
+        const minutes = Math.floor((status.timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+
+        header.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 250px;">
+            <div style="
+              background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(34, 211, 238, 0.15));
+              padding: 8px 16px;
+              border-radius: 12px;
+              border: 1px solid rgba(139, 92, 246, 0.3);
+              display: flex;
+              align-items: center;
+              gap: 10px;
+            ">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: #8b5cf6;">
+                <circle cx="12" cy="12" r="10" stroke-width="2"/>
+                <path d="M12 6v6l4 2" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <div>
+                <div style="font-size: 10px; color: rgba(255, 255, 255, 0.6); font-weight: 600; letter-spacing: 0.5px;">الوقت المتبقي على الفترة التجريبية</div>
+                <div id="timerDisplay" style="color: #22d3ee; font-weight: 900; font-size: 16px; direction: ltr; text-align: left;">
+                  ${hours}h ${minutes}m
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 300px; max-width: 500px;">
+            <input 
+              type="text" 
+              class="license-input"
+              placeholder="كود التفعيل"
+              style="
+                flex: 1;
+                padding: 10px 16px;
+                border: 2px solid rgba(139, 92, 246, 0.3);
+                border-radius: 10px;
+                background: rgba(255, 255, 255, 0.05);
+                color: rgba(255, 255, 255, 0.9);
+                font-size: 14px;
+                font-weight: 600;
+                text-align: center;
+                letter-spacing: 0.5px;
+                text-transform: uppercase;
+                transition: all 0.3s;
+              "
+            />
+            <button class="license-btn" style="
+              padding: 10px 24px;
+              background: linear-gradient(135deg, #22c55e, #16a34a);
+              color: white;
+              border: none;
+              border-radius: 10px;
+              font-weight: 700;
+              font-size: 14px;
+              cursor: pointer;
+              white-space: nowrap;
+              transition: all 0.3s;
+              box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(34, 197, 94, 0.4)';"
+               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(34, 197, 94, 0.3)';">
+              ✨ تفعيل
+            </button>
+          </div>
+
+          <div id="licenseMsg" style="color: rgba(255, 255, 255, 0.8); font-size: 12px; font-weight: 600; min-width: 150px; text-align: center;"></div>
+        `;
+
+        document.body.appendChild(header);
+        document.body.style.paddingTop = '80px';
+
+        setInterval(() => {
+          const s = checkTrialStatus();
+          if (s.isExpired) {
+            location.reload();
+          }
+          const h = Math.floor(s.timeLeft / (1000 * 60 * 60));
+          const m = Math.floor((s.timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+          document.getElementById('timerDisplay').innerHTML = `${h}h ${m}m`;
+        }, 60000);
+
+        const btn = header.querySelector('.license-btn');
+        const input = header.querySelector('.license-input');
+        const msg = document.getElementById('licenseMsg');
+
+        input.addEventListener('focus', function() {
+          this.style.borderColor = 'rgba(139, 92, 246, 0.6)';
+          this.style.background = 'rgba(255, 255, 255, 0.08)';
+        });
+
+        input.addEventListener('blur', function() {
+          this.style.borderColor = 'rgba(139, 92, 246, 0.3)';
+          this.style.background = 'rgba(255, 255, 255, 0.05)';
+        });
+
+        btn.addEventListener('click', () => {
+          const key = input.value.trim();
+          if (!key) {
+            msg.style.color = '#fca5a5';
+            msg.textContent = '⚠️ أدخل الكود';
+            setTimeout(() => msg.textContent = '', 3000);
+            return;
+          }
+
+          if (validateLicenseKey(key)) {
+            activateLicense(key);
+            msg.style.color = '#86efac';
+            msg.textContent = '✅ تم التفعيل!';
+            setTimeout(() => location.reload(), 1500);
+          } else {
+            if (typeof gtag !== 'undefined') {
+              gtag('event', 'license_failed', {
+                'event_category': 'License',
+                'event_label': 'Invalid License Key Entered'
+              });
+            }
+
+            msg.style.color = '#fca5a5';
+            msg.textContent = '❌ كود خاطئ';
+            input.style.borderColor = 'rgba(239, 68, 68, 0.8)';
+            setTimeout(() => {
+              msg.textContent = '';
+              input.style.borderColor = 'rgba(139, 92, 246, 0.3)';
+            }, 3000);
+          }
+        });
+
+        input.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') btn.click();
+        });
+      }
+
+      function showExpiredScreen() {
+        document.getElementById('trialHeader')?.remove();
+
+        if (typeof gtag !== 'undefined') {
+          gtag('event', 'trial_expired', {
+            'event_category': 'Trial',
+            'event_label': 'Trial Period Expired'
+          });
+        }
+
+        const header = document.createElement('div');
+        header.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          background: linear-gradient(
+            135deg,
+            rgba(139, 92, 246, 0.12),
+            rgba(34, 211, 238, 0.12)
+          );
+          backdrop-filter: blur(12px);
+          border-bottom: 2px solid rgba(139, 92, 246, 0.3);
+          padding: 24px 20px;
+          z-index: 9998;
+          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+        `;
+
+        header.innerHTML = `
+          <div style="max-width: 600px; margin: 0 auto; text-align: center;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 16px;">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: #ef4444;">
+                <circle cx="12" cy="12" r="10" stroke-width="2"/>
+                <path d="M12 6v6l4 2" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <h2 style="font-size: 22px; font-weight: 800; color: rgba(255, 255, 255, 0.95); margin: 0;">
+                انتهت الفترة التجريبية
+              </h2>
+            </div>
+            <p style="font-size: 15px; color: rgba(255, 255, 255, 0.8); margin-bottom: 20px; line-height: 1.6;">
+              لقد استمتعت بتجربة الأداة لمدة 24 ساعة. <br>
+              للاستمرار في تحقيق الأرباح واستخدام الأداة مدى الحياة، يرجى شراء النسخة الكاملة.
+            </p>
+
+            <button class="whatsapp-btn" style="
+              width: 100%;
+              max-width: 400px;
+              padding: 14px 32px;
+              background: linear-gradient(135deg, #25D366, #128C7E);
+              color: white;
+              border: none;
+              border-radius: 12px;
+              font-weight: 700;
+              font-size: 17px;
+              cursor: pointer;
+              margin-bottom: 16px;
+              transition: all 0.3s;
+              box-shadow: 0 4px 16px rgba(37, 211, 102, 0.4);
+            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(37, 211, 102, 0.5)';" 
+               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 16px rgba(37, 211, 102, 0.4)';">
+              💬 تواصل عبر واتساب للشراء
+            </button>
+
+            <div style="background: rgba(0, 0, 0, 0.2); padding: 16px; border-radius: 12px; margin-bottom: 12px; border: 1px solid rgba(139, 92, 246, 0.3);">
+              <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;">
+                <input 
+                  type="text" 
+                  class="license-input"
+                  placeholder="أدخل كود التفعيل"
+                  style="
+                    flex: 1;
+                    max-width: 280px;
+                    padding: 11px 16px;
+                    border: 2px solid rgba(139, 92, 246, 0.4);
+                    border-radius: 10px;
+                    background: rgba(0, 0, 0, 0.3);
+                    color: white;
+                    font-size: 14px;
+                    font-weight: 600;
+                    text-align: center;
+                    letter-spacing: 0.5px;
+                    text-transform: uppercase;
+                  "
+                />
+                <button class="license-btn" style="
+                  padding: 11px 26px;
+                  background: linear-gradient(135deg, #22d3ee, #8b5cf6);
+                  color: white;
+                  border: none;
+                  border-radius: 10px;
+                  font-weight: 700;
+                  font-size: 14px;
+                  cursor: pointer;
+                  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+                ">
+                  ✨ تفعيل
+                </button>
+              </div>
+              <div id="licenseMsg" style="color: rgba(255, 255, 255, 0.9); font-size: 13px; font-weight: 600;"></div>
+            </div>
+
+            <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(34, 211, 238, 0.15)); padding: 14px; border-radius: 10px; border: 1px solid rgba(139, 92, 246, 0.3);">
+              <div style="font-size: 11px; color: rgba(255, 255, 255, 0.7); margin-bottom: 4px; font-weight: 600;">السعر</div>
+              <div style="font-size: 26px; font-weight: 900; color: #22d3ee; text-shadow: 0 2px 8px rgba(34, 211, 238, 0.3);">${PRICE}</div>
+              <div style="font-size: 11px; color: rgba(255, 255, 255, 0.6); margin-top: 3px;">دفعة واحدة • مدى الحياة</div>
+            </div>
+          </div>
+        `;
+
+        document.body.appendChild(header);
+        document.body.style.paddingTop = '280px';
+
+        header.querySelector('.whatsapp-btn').addEventListener('click', () => {
+          if (typeof gtag !== 'undefined') {
+            gtag('event', 'whatsapp_clicked', {
+              'event_category': 'Conversion',
+              'event_label': 'WhatsApp Purchase Button Clicked'
+            });
+          }
+
+          const msg = encodeURIComponent(`مرحباً! أريد شراء أداة COD Pricing Tool مدى الحياة بسعر ${PRICE}`);
+          window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, '_blank');
+        });
+
+        const btn = header.querySelector('.license-btn');
+        const input = header.querySelector('.license-input');
+        const msgDiv = header.querySelector('#licenseMsg');
+
+        btn.addEventListener('click', () => {
+          const key = input.value.trim();
+          if (!key) {
+            msgDiv.style.color = '#fca5a5';
+            msgDiv.textContent = '⚠️ الرجاء إدخال كود التفعيل';
+            return;
+          }
+
+          if (validateLicenseKey(key)) {
+            activateLicense(key);
+            msgDiv.style.color = '#86efac';
+            msgDiv.textContent = '✅ تم التفعيل بنجاح! جاري إعادة التحميل...';
+            setTimeout(() => location.reload(), 1500);
+          } else {
+            if (typeof gtag !== 'undefined') {
+              gtag('event', 'license_failed', {
+                'event_category': 'License',
+                'event_label': 'Invalid License Key After Expiry'
+              });
+            }
+
+            msgDiv.style.color = '#fca5a5';
+            msgDiv.textContent = '❌ الكود الذي أدخلته غير صحيح';
+            input.style.borderColor = 'rgba(239, 68, 68, 0.8)';
+          }
+        });
+
+        input.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') btn.click();
+        });
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+
+      async function init() {
+        const isIncognito = await isIncognitoMode();
+        if (isIncognito) {
+          disableToolCompletely();
+          showIncognitoBlockScreen();
+          return;
+        }
+
+        if (checkLicense()) {
+          console.log('✅ النسخة الكاملة مفعّلة');
+          return;
+        }
+
+        const status = checkTrialStatus();
+
+        if (status.isExpired) {
+          disableAllInputs();
+          showExpiredScreen();
+        } else {
+          createTrialHeader();
+        }
+      }
+    })();
+  </script>
+</head>
+  
+<body>
+  <!-- START: كود حماية فايربيس -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBoDXsELYXl440Wb3bd6xir0sMbj-6LSIA",
+        authDomain: "cod-pricing.firebaseapp.com",
+        projectId: "cod-pricing",
+        storageBucket: "cod-pricing.firebasestorage.app",
+        messagingSenderId: "815665273956",
+        appId: "1:815665273956:web:6a496b1d28da2aa0b25371",
+        measurementId: "G-7XLMBDYNXG"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    onAuthStateChanged(auth, (user) => {
+        if (!user) {
+            window.location.href = "login.html";
+        } else {
+            console.log("Logged in as:", user.email);
+        }
+    });
+
+    window.logout = () => signOut(auth).then(() => window.location.href = "login.html");
+</script>
+<!-- END: كود حماية فايربيس -->
+
+  <div class="min-h-screen p-4">
+    <div class="w-full max-w-screen-2xl mx-auto">
+
+      <!-- Header -->
+      <div id="appHeader" dir="ltr" class="glass soft-border rounded-2xl p-4 mb-6 no-print">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          
+          <div class="flex items-center justify-between md:justify-start gap-4">
+            <div class="flex items-center gap-3">
+              <span class="text-xl font-black gradient-text">Made By Anouar</span>
+              <span class="px-3 py-1 rounded-full text-xs font-black"
+                    style="background:linear-gradient(135deg, rgba(139,92,246,.92), rgba(34,211,238,.35));border:1px solid rgba(255,255,255,.14);">
+                v4.1 PRO
+              </span>
+            </div>
+
+            <div dir="ltr" class="flex items-center gap-2 md:hidden">
+              <a href="https://www.instagram.com/digitalverse" target="_blank" class="text-white/70 hover:text-white transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                </svg>
+              </a>
+              <a href="https://t.me/digitalverse12" target="_blank" class="text-white/70 hover:text-white transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </a>
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between md:justify-end">
+            <div class="glass rounded-xl p-2 flex items-center gap-2">
+              <button class="btn px-3 py-2 rounded-lg font-extrabold text-sm active" data-currency="DZD" onclick="changeCurrency('DZD')">DZD</button>
+              <button class="btn px-3 py-2 rounded-lg font-extrabold text-sm" data-currency="MAD" onclick="changeCurrency('MAD')">MAD</button>
+              <button class="btn px-3 py-2 rounded-lg font-extrabold text-sm" data-currency="TND" onclick="changeCurrency('TND')">TND</button>
+            </div>
+
+            <div class="glass rounded-xl p-2 flex items-center gap-2">
+              <button class="btn px-3 py-2 rounded-lg font-extrabold text-sm active" data-lang="ar" onclick="changeLanguage('ar')">AR</button>
+              <button class="btn px-3 py-2 rounded-lg font-extrabold text-sm" data-lang="en" onclick="changeLanguage('en')">EN</button>
+              <button class="btn px-3 py-2 rounded-lg font-extrabold text-sm" data-lang="fr" onclick="changeLanguage('fr')">FR</button>
+            </div>
+
+            <div dir="ltr" class="hidden md:flex items-center gap-3">
+              <a href="https://www.instagram.com/digitalverse" target="_blank" class="text-white/70 hover:text-white transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                </svg>
+              </a>
+              <a href="https://t.me/digitalverse12" target="_blank" class="text-white/70 hover:text-white transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-3 text-xs text-white/70">
+          <span class="fx-prefix" data-i18n="fxPrefix">سعر الصرف افتراضي (USD → العملة): </span>
+          <span class="font-bold" id="fxHint">DZD 248.00</span>
+          <span class="text-white/50"> • </span>
+          <span class="text-white/50" data-i18n="fxHintNote">يمكنك تغيير سعر الصرف من خانة “سعر الصرف” وسيُحفظ تلقائياً.</span>
+        </div>
+      </div>
+
+      <!-- Success Message -->
+      <div id="successMessage" class="hidden mb-6 glass rounded-xl p-4 no-print">
+        <div class="flex items-center justify-between">
+          <span id="successText" class="font-semibold">OK</span>
+          <button onclick="hideSuccessMessage()" class="text-white/60 hover:text-white transition-colors">
+            <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Card -->
+      <div class="glass-strong rounded-3xl overflow-hidden">
+        <div class="relative p-8 text-center">
+          <div class="absolute inset-0" style="background:linear-gradient(90deg, rgba(139,92,246,.18), rgba(34,211,238,.10), rgba(96,165,250,.12));"></div>
+          <div class="relative">
+            <h1 class="text-4xl md:text-5xl font-black gradient-text mb-3" data-i18n="heroTitle">أداة تسعير المنتجات</h1>
+            <p class="text-white/70 text-lg" data-i18n="heroTag">أداة احترافية لحساب تسعير المنتجات في التجارة الإلكترونية بالجزائر</p>
+
+            <div class="mt-6 grid md:grid-cols-3 gap-3 text-sm text-white/70">
+              <div class="glass rounded-xl p-3" data-i18n="heroSub1">توقع أرباحك ومصاريفك على مدار 30 يوم</div>
+              <div class="glass rounded-xl p-3" data-i18n="heroSub2">احسب الخصم الأمثل دون خسارة أرباحك</div>
+              <div class="glass rounded-xl p-3" data-i18n="heroSub3">تصور بياناتك بشكل مرئي وسهل الفهم</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="glass border-y border-white/10 no-print">
+          <div class="flex gap-2 overflow-x-auto px-6 py-2">
+            <button class="tab-button active" onclick="switchTab('calculator', this)" data-i18n="tab_calculator">حاسبة التسعير</button>
+            <button class="tab-button" onclick="switchTab('monthly', this)" data-i18n="tab_monthly">توقعات شهرية</button>
+            <button class="tab-button" onclick="switchTab('discounts', this)" data-i18n="tab_discounts">حاسبة الخصومات</button>
+            <button class="tab-button" onclick="switchTab('charts', this)" data-i18n="tab_charts">الرسوم البيانية</button>
+          </div>
+        </div>
+
+        <!-- Scenario Buttons -->
+        <div class="p-6 border-b border-white10 no-print">
+          <div class="flex flex-wrap gap-3 justify-center">
+            <button onclick="applyScenario(1)" class="scenario-btn px-6 py-3 rounded-xl font-bold flex items-center gap-2">🧱 سيناريو 01</button>
+            <button onclick="applyScenario(2)" class="scenario-btn px-6 py-3 rounded-xl font-bold flex items-center gap-2">🟠 سيناريو 02</button>
+            <button onclick="applyScenario(3)" class="scenario-btn px-6 py-3 rounded-xl font-bold flex items-center gap-2">🔷 سيناريو 03</button>
+            <button onclick="applyScenario(4)" class="scenario-btn px-6 py-3 rounded-xl font-bold flex items-center gap-2">🚀 سيناريو 04</button>
+          </div>
+          <div class="mt-3 text-center text-xs text-white60">اضغط على سيناريو لتعبئة القيم تلقائياً (ثم يمكنك تعديل أي رقم يدويًا).</div>
+        </div>
+
+        <!-- Tab: Calculator -->
+        <div id="tab-calculator" class="tab-content active p-6">
+          <div class="grid lg:grid-cols-2 gap-8">
+            <!-- Inputs -->
+            <div class="space-y-6">
+              <div class="flex items-center gap-3 mb-2">
+                <h2 class="text-2xl font-bold gradient-text" data-i18n="inputsTitle">الإدخالات</h2>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-2 text-white" data-i18n="lbl_productName">اسم المنتج</label>
+                <input type="text" id="productName" class="w-full px-4 py-3 rounded-xl premium-input" data-i18n-placeholder="ph_productName" placeholder="مثال: ساعة ذكية" />
+              </div>
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-semibold mb-2 text-white" data-i18n="lbl_wholesale">سعر الشراء بالجملة (USD)</label>
+                  <input type="number" id="wholesalePrice" class="w-full px-4 py-3 rounded-xl premium-input" placeholder="1200" oninput="calculate()" />
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold mb-2 text-white" data-i18n="lbl_exchange">سعر الصرف</label>
+                  <input type="number" id="exchangeRate" class="w-full px-4 py-3 rounded-xl premium-input" value="248" oninput="onExchangeInput()" />
+                </div>
+              </div>
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-semibold mb-2 text-white" data-i18n="lbl_confirm">نسبة التأكيد (%)</label>
+                  <input type="number" id="confirmRate" class="w-full px-4 py-3 rounded-xl premium-input" placeholder="60" oninput="calculate()" />
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold mb-2 text-white" data-i18n="lbl_delivery">نسبة التوصيل (%)</label>
+                  <input type="number" id="deliveryRate" class="w-full px-4 py-3 rounded-xl premium-input" placeholder="80" oninput="calculate()" />
+                </div>
+              </div>
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-semibold mb-2 text-white" data-i18n="lbl_dailyBudget">الميزانية اليومية (USD)</label>
+                  <input type="number" id="dailyAdSpend" class="w-full px-4 py-3 rounded-xl premium-input" placeholder="25" oninput="calculate()" />
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold mb-2 text-white" data-i18n="lbl_cpo">التكلفة لكل طلب (USD)</label>
+                  <input type="number" id="costPerOrder" class="w-full px-4 py-3 rounded-xl premium-input" placeholder="2.5" oninput="calculate()" />
+                </div>
+              </div>
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-semibold mb-2 text-white" data-i18n="lbl_extra">تكاليف إضافية (دج)</label>
+                  <input type="number" id="additionalCosts" class="w-full px-4 py-3 rounded-xl premium-input" placeholder="200" oninput="calculate()" />
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold mb-2 text-white" data-i18n="lbl_returnCost">تكلفة الإرجاع لكل طلب (دج)</label>
+                  <input type="number" id="returnCost" class="w-full px-4 py-3 rounded-xl premium-input" placeholder="300" oninput="calculate()" />
+                </div>
+              </div>
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-semibold mb-2 text-white" data-i18n="lbl_finalPrice">السعر النهائي (دج)</label>
+                  <input type="number" id="finalPrice" class="w-full px-4 py-3 rounded-xl premium-input" placeholder="..." oninput="onFinalPriceChange()" />
+                  <div class="text-center text-xs text-white/60 mt-1" data-i18n="hint_finalPrice">إذا كتبت السعر النهائي يتم حساب الربح تلقائياً</div>
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold mb-2 text-white" data-i18n="lbl_profitMargin">الربح (دج)</label>
+                  <input type="number" id="profitMarginInput" class="w-full px-4 py-3 rounded-xl premium-input" placeholder="800" oninput="onProfitMarginChange()" />
+                  <div class="text-center text-xs text-white/60 mt-1" data-i18n="hint_profit">إذا كتبت الربح يتم اقتراح السعر النهائي تلقائياً</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Results -->
+            <div class="space-y-6">
+              <div id="lossWarning" class="hidden stat-card border-2" style="border-color:rgba(239,68,68,.45);">
+                <div class="font-bold text-lg" data-i18n="lossWarning">تحذير: أنت في خسارة</div>
+                <div class="text-white/70 text-sm mt-1" data-i18n="lossHint">راجع السعر أو التكاليف قبل إطلاق الحملات.</div>
+              </div>
+
+              <div class="stat-card">
+                <h3 class="font-bold mb-4 text-lg" data-i18n="sec_orders">إجمالي الطلبات المتوقعة:</h3>
+                <div class="space-y-3 text-sm">
+                  <div class="flex justify-between"><span class="text-white/70" data-i18n="dailyOrders">الطلبات اليومية:</span><span id="dailyOrders" class="font-bold">0</span></div>
+                  <div class="flex justify-between"><span class="text-white/70" data-i18n="confirmedOrders">الطلبات المؤكدة:</span><span id="confirmedOrders" class="font-bold text-sky-300">0</span></div>
+                  <div class="flex justify-between"><span class="text-white/70" data-i18n="deliveredOrders">الطلبات المستلمة:</span><span id="deliveredOrders" class="font-bold text-emerald-300">0</span></div>
+                  <div class="flex justify-between"><span class="text-white/70" data-i18n="returnedOrders">الطلبات المرتجعة:</span><span id="returnedOrders" class="font-bold text-red-300">0</span></div>
+                  <div class="flex justify-between pt-3 border-t border-white/10">
+                    <span class="font-semibold text-white" data-i18n="returnRate">نسبة الإرجاع:</span>
+                    <span id="returnRate" class="font-bold text-orange-300">0</span>
+                  </div>
+                  <div id="returnCostRow" class="hidden flex justify-between pt-3 border-t border-white/10">
+                    <span class="font-semibold text-white" data-i18n="returnCostDaily">تكلفة الإرجاع اليومية:</span>
+                    <span id="totalReturnCost" class="font-bold text-red-300">0</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <h3 class="font-bold mb-4 text-lg" data-i18n="sec_marketing">تحليل تكاليف التسويق</h3>
+                <div class="space-y-3 text-sm">
+                  <div class="flex justify-between"><span class="text-white/70" data-i18n="cpo">التكلفة لكل طلب:</span><span id="costPerOrderDisplay" class="font-bold">0</span></div>
+                  <div class="flex justify-between"><span class="text-white/70" data-i18n="finalCpo">التكلفة الفعلية:</span><span id="finalCostPerOrder" class="font-bold text-red-300">0</span></div>
+                  <div class="flex justify-between"><span class="text-white/70" data-i18n="finalCpoDzd">التكلفة الفعلية (DZD):</span><span id="finalCostDZD" class="font-bold text-white/80">0</span></div>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <h3 class="font-bold mb-4 text-lg" data-i18n="sec_costDetails">تفاصيل التكلفة</h3>
+                <div class="space-y-3 text-sm">
+                  <div class="flex justify-between"><span class="text-white/70" data-i18n="wholesaleLine">سعر الجملة:</span><span id="wholesalePriceDisplay" class="font-bold">0</span></div>
+                  <div class="flex justify-between"><span class="text-white/70" data-i18n="adsLine">تكلفة الإعلانات:</span><span id="adCostDisplay" class="font-bold">0</span></div>
+                  <div id="additionalCostsRow" class="hidden flex justify-between"><span class="text-white/70" data-i18n="extraLine">تكاليف إضافية:</span><span id="additionalCostsDisplay" class="font-bold">0</span></div>
+                  <div class="flex justify-between pt-3 border-t border-white/10">
+                    <span class="font-semibold text-lg text-white" data-i18n="totalCost">التكلفة الإجمالية:</span>
+                    <span id="totalCost" class="font-bold text-2xl text-red-300">0</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="stat-card text-center">
+                <div class="text-sm text-white/80 mb-2" data-i18n="suggestedFinalPrice">السعر النهائي المقترح</div>
+                <div id="finalPriceDisplay" class="text-5xl md:text-6xl font-black gradient-text mb-3">0</div>
+                <div class="text-sm text-white/60 mb-5" data-i18n="currencyNote">بالدينار (DZD) حسب سعر الصرف الحالي</div>
+                <div class="space-y-3 pt-5 border-t border-white/10">
+                  <div class="flex justify-between items-center">
+                    <span class="text-white/70" data-i18n="profitMargin">هامش الربح:</span>
+                    <span id="profitMarginDisplay" class="text-2xl font-bold">0</span>
+                  </div>
+                  <div class="flex justify-between items-center">
+                    <span class="text-white/70" data-i18n="netProfit">الربح الصافي:</span>
+                    <span id="netProfitDisplay" class="text-xl font-bold">0</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <h3 class="font-bold text-center mb-4 text-xl" data-i18n="sec_dailyProfit">تحليل الربح اليومي</h3>
+                <div class="text-center">
+                  <div id="dailyNetProfit" class="text-5xl font-black">0</div>
+                  <div class="text-xs text-white/70 mt-2 glass rounded-xl p-3">
+                    <span data-i18n="profitFormula">المعادلة:</span>
+                    <span id="dailyProfitCalc">0</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <h3 class="font-bold mb-4 text-lg" data-i18n="sec_roi">العائد على الاستثمار</h3>
+                <div class="space-y-3 text-sm">
+                  <div class="flex justify-between"><span class="text-white/70" data-i18n="revenue">الإيرادات اليومية:</span><span id="revenue" class="font-bold text-emerald-300">0</span></div>
+                  <div class="flex justify-between"><span class="text-white/70" data-i18n="dailyCosts">التكاليف اليومية:</span><span id="totalDailyCosts" class="font-bold text-red-300">0</span></div>
+                  <div class="flex justify-between pt-3 border-t border-white/10">
+                    <span class="font-semibold text-lg text-white" data-i18n="roi">ROI</span>
+                    <span id="roi" class="font-bold text-3xl gradient-text">0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Monthly -->
+        <div id="tab-monthly" class="tab-content p-6">
+          <div class="max-w-5xl mx-auto space-y-8">
+            <div class="text-center mb-8">
+              <h2 class="text-4xl font-black mb-3 gradient-text" data-i18n="monthlyTitle">توقعات الربح الشهري</h2>
+              <p class="text-white/70 text-lg" data-i18n="monthlyHint">حساب تقريبي على 30 يوم بناءً على قيمك الحالية</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-6">
+              <div class="stat-card text-center">
+                <div class="text-sm text-white/70 mb-2" data-i18n="monthlyRevenue">الإيرادات الشهرية</div>
+                <div id="monthlyRevenue" class="text-5xl font-black text-emerald-300">0</div>
+              </div>
+              <div class="stat-card text-center">
+                <div class="text-sm text-white/70 mb-2" data-i18n="monthlyCosts">التكاليف الشهرية</div>
+                <div id="monthlyCosts" class="text-5xl font-black text-red-300">0</div>
+              </div>
+              <div class="stat-card text-center">
+                <div class="text-sm text-white/70 mb-2" data-i18n="monthlyProfit">الربح الصافي الشهري</div>
+                <div id="monthlyProfit" class="text-5xl font-black text-purple-300">0</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <h3 class="text-2xl font-bold mb-6 gradient-text" data-i18n="monthlyDetails">تفاصيل الشهر</h3>
+              <div class="space-y-4">
+                <div class="flex justify-between items-center glass rounded-xl p-4">
+                  <span class="text-white/70" data-i18n="monthlyOrders">الطلبات الشهرية</span>
+                  <span id="monthlyOrders" class="font-bold text-xl">0</span>
+                </div>
+                <div class="flex justify-between items-center glass rounded-xl p-4">
+                  <span class="text-white/70" data-i18n="monthlyDelivered">الطلبات المستلمة</span>
+                  <span id="monthlyDelivered" class="font-bold text-xl text-emerald-300">0</span>
+                </div>
+                <div class="flex justify-between items-center glass rounded-xl p-4">
+                  <span class="text-white/70" data-i18n="monthlyReturned">الطلبات المرتجعة</span>
+                  <span id="monthlyReturned" class="font-bold text-xl text-red-300">0</span>
+                </div>
+                <div class="flex justify-between items-center glass rounded-xl p-4">
+                  <span class="text-white/70" data-i18n="monthlyReturnCost">تكلفة الإرجاع الشهرية</span>
+                  <span id="monthlyReturnCost" class="font-bold text-xl text-orange-300">0</span>
+                </div>
+                <div class="flex justify-between items-center glass rounded-xl p-4 font-bold border-t-2" style="border-color:rgba(139,92,246,.35);">
+                  <span class="text-lg" data-i18n="monthlyROI">ROI</span>
+                  <span id="monthlyROI" class="text-3xl gradient-text">0</span>
+                </div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <h3 class="text-2xl font-bold mb-6 gradient-text" data-i18n="monthlyInsightsTitle">نصائح ذكية</h3>
+              <div id="monthlyInsights" class="space-y-3"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Discounts -->
+        <div id="tab-discounts" class="tab-content p-6">
+          <div class="max-w-5xl mx-auto space-y-8">
+            <div class="text-center mb-8">
+              <h2 class="text-4xl font-black mb-3 gradient-text" data-i18n="discountsTitle">حاسبة العروض والخصومات</h2>
+              <p class="text-white/70 text-lg" data-i18n="discountsHint">اختر نسبة الخصم وشاهد تأثيرها على الربح</p>
+            </div>
+            <div class="stat-card">
+              <h3 class="text-xl font-bold mb-6" data-i18n="discountSliderTitle">نسبة الخصم</h3>
+              <input type="range" id="discountSlider" min="0" max="50" value="0" step="5" class="w-full mb-6" oninput="calculateDiscount()" />
+              <div class="text-center">
+                <span id="discountPercent" class="text-7xl font-black gradient-text">0</span>
+                <span class="text-3xl text-white/60 font-bold">%</span>
+              </div>
+            </div>
+            <div class="grid md:grid-cols-2 gap-6">
+              <div class="stat-card text-center">
+                <div class="text-sm text-white/70 mb-2" data-i18n="discountedPriceTitle">السعر بعد الخصم</div>
+                <div id="discountedPrice" class="text-5xl font-black text-purple-300">0</div>
+              </div>
+              <div class="stat-card text-center">
+                <div class="text-sm text-white/70 mb-2" data-i18n="discountedProfitTitle">الربح بعد الخصم</div>
+                <div id="discountedProfit" class="text-5xl font-black">0</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <h3 class="text-2xl font-bold mb-6 gradient-text" data-i18n="discountsTableTitle">جدول الخصومات المقترحة</h3>
+              <div id="discountTable" class="space-y-3"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Charts -->
+        <div id="tab-charts" class="tab-content p-6">
+          <div class="max-w-7xl mx-auto space-y-8">
+            <div class="text-center mb-8">
+              <h2 class="text-4xl font-black mb-3 gradient-text" data-i18n="chartsTitle">الرسوم البيانية والتحليل</h2>
+              <p class="text-white/70 text-lg" data-i18n="chartsHint">تحديث الرسوم يتم تلقائياً عند فتح التبويب</p>
+            </div>
+            <div class="grid lg:grid-cols-2 gap-8">
+              <div class="stat-card">
+                <h3 class="text-xl font-bold mb-6 text-center gradient-text" data-i18n="chart_cost_breakdown">توزيع التكاليف</h3>
+                <div class="chart-frame">
+                  <div class="chart-inner">
+                    <div class="chart-container"><canvas id="costPieChart"></canvas></div>
+                  </div>
+                </div>
+              </div>
+              <div class="stat-card">
+                <h3 class="text-xl font-bold mb-6 text-center gradient-text" data-i18n="chart_profit_overview">مقارنة الأرباح</h3>
+                <div class="chart-frame">
+                  <div class="chart-inner">
+                    <div class="chart-container"><canvas id="profitBarChart"></canvas></div>
+                  </div>
+                </div>
+              </div>
+              <div class="stat-card lg:col-span-2">
+                <h3 class="text-xl font-bold mb-6 text-center gradient-text" data-i18n="chart_daily_profit">توقع الربح اليومي (30 يوم)</h3>
+                <div class="chart-frame">
+                  <div class="chart-inner">
+                    <div class="chart-container" style="height:380px"><canvas id="monthlyLineChart"></canvas></div>
+                  </div>
+                </div>
+              </div>
+              <div class="stat-card">
+                <h3 class="text-xl font-bold mb-6 text-center gradient-text" data-i18n="chart_orders">توزيع الطلبات</h3>
+                <div class="chart-frame">
+                  <div class="chart-inner">
+                    <div class="chart-container"><canvas id="ordersDonutChart"></canvas></div>
+                  </div>
+                </div>
+              </div>
+              <div class="stat-card">
+                <h3 class="text-xl font-bold mb-6 text-center gradient-text" data-i18n="chart_roi">ROI</h3>
+                <div class="chart-frame">
+                  <div class="chart-inner">
+                    <div class="chart-container"><canvas id="roiChart"></canvas></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-4 justify-center py-8 no-print">
+          <button class="btn px-6 py-3 rounded-xl font-bold flex items-center gap-2" onclick="saveData()">
+            💾 <span data-i18n="btn_save">حفظ البيانات</span>
+          </button>
+          <button class="btn px-6 py-3 rounded-xl font-bold flex items-center gap-2" onclick="loadData()">
+            📂 <span data-i18n="btn_load">استرجاع</span>
+          </button>
+          <button class="btn-gradient px-6 py-3 rounded-xl flex items-center gap-2" onclick="exportToPDF()">
+            📄 <span data-i18n="btn_pdf">تصدير PDF</span>
+          </button>
+          <button class="btn px-6 py-3 rounded-xl font-bold flex items-center gap-2 text-red-300" onclick="resetAll()">
+            🗑️ <span data-i18n="btn_reset">مسح الكل</span>
+          </button>
+          <button class="btn px-6 py-3 rounded-xl font-bold flex items-center gap-2 text-sky-300" onclick="loadExample()">
+            💡 <span data-i18n="btn_example">مثال توضيحي</span>
+          </button>
+        </div>
+
+      </div>
+
+      <div class="text-center mt-12 mb-8 opacity-60 text-sm no-print">
+        <div class="font-bold text-white mb-1" data-i18n="footerTitle">PRO • COD Pricing Tool</div>
+        <div data-i18n="footerSub">v4.1 PRO • Dark Theme • PDF • Monthly • Charts • Discounts</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- زر الشات العائم -->
+  <button id="geminiChatBtn" style="
+            position: fixed; bottom: 25px; right: 25px; z-index: 2147483647;
+            width: 60px; height: 60px; border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            box-shadow: 0 10px 30px rgba(37,99,235,0.4);
+            border: 2px solid rgba(255,255,255,0.2);
+            color: white; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: transform 0.2s;
+        " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+            <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
+  </button>
+
+  <div id="geminiChatWindow" style="
+            display: none; position: fixed; bottom: 95px; right: 25px;
+            width: 350px; height: 500px; background: #0f172a;
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 20px;
+            z-index: 2147483647; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            flex-direction: column; overflow: hidden; font-family: 'Tajawal', sans-serif;
+        ">
+            <div style="padding: 15px; background: linear-gradient(to right, #3b82f6, #1d4ed8); color: white; display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 18px;">✨</span> المساعد الذكي
+                </div>
+                <button id="closeGeminiChat" style="background:none; border:none; color:white; font-size: 24px; cursor:pointer;">&times;</button>
+            </div>
+
+            <div id="geminiMessages" style="flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background: #0f172a;">
+                <div style="background: #1e293b; color: #e2e8f0; padding: 12px; border-radius: 12px 12px 2px 12px; align-self: flex-start; max-width: 85%; font-size: 14px; border: 1px solid rgba(255,255,255,0.05);">
+                    مرحباً! 👋 أنا أعمل الآن بمحرك Google Gemini المتطور. كيف أساعدك؟
+                </div>
+            </div>
+
+            <form id="geminiForm" style="padding: 12px; background: #1e293b; border-top: 1px solid rgba(255,255,255,0.1); display: flex; gap: 8px;">
+                <input type="text" id="geminiInput" placeholder="اكتب سؤالك..." style="flex: 1; background: #0f172a; border: 1px solid #334155; color: white; padding: 10px; border-radius: 10px; outline: none;">
+                <button type="submit" style="background: #3b82f6; color: white; border: none; padding: 0 15px; border-radius: 10px; cursor: pointer;">➤</button>
+            </form>
+  </div>
+
+  <script>
+    // ================== CHATBOT LOGIC ==================
+    const btn = document.getElementById('geminiChatBtn');
+    const win = document.getElementById('geminiChatWindow');
+    const close = document.getElementById('closeGeminiChat');
+    const form = document.getElementById('geminiForm');
+    const input = document.getElementById('geminiInput');
+    const msgs = document.getElementById('geminiMessages');
+
+    function toggle() {
+        win.style.display = (win.style.display === 'none') ? 'flex' : 'none';
+        if (win.style.display === 'flex') input.focus();
+    }
+    btn.onclick = toggle;
+    close.onclick = toggle;
+
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        const txt = input.value.trim();
         if (!txt) return;
 
-        // إضافة رسالة المستخدم
-        body.innerHTML += `<div class="msg user-msg">${txt}</div>`;
+        // رسالة المستخدم
+        msgs.innerHTML += `<div style="background: #3b82f6; color: white; padding: 10px 15px; border-radius: 15px 15px 15px 2px; align-self: flex-end; max-width: 85%; font-size: 14px;">${txt}</div>`;
+        msgs.scrollTop = msgs.scrollHeight;
         input.value = '';
-        body.scrollTop = body.scrollHeight;
+        input.disabled = true;
+
+        // Loading
+        const loadId = 'loading-' + Date.now();
+        msgs.innerHTML += `<div id="${loadId}" style="color: #94a3b8; font-size: 12px; margin-right: 10px;">جاري التفكير...</div>`;
+        msgs.scrollTop = msgs.scrollHeight;
 
         try {
-            // الاتصال بالسيرفر
-            let res = await fetch('/api/chat', {
+            const res = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: txt })
             });
 
-            let data = await res.json();
-            
-            // إضافة رد البوت
-            body.innerHTML += `<div class="msg bot-msg">${data.reply || "حدث خطأ"}</div>`;
-        } catch (error) {
-            body.innerHTML += `<div class="msg bot-msg" style="color:red">تأكد من إعدادات API</div>`;
-        }
-        body.scrollTop = body.scrollHeight;
-    }
-</script>
+            const data = await res.json();
+            document.getElementById(loadId).remove();
 
+            if (res.ok) {
+                msgs.innerHTML += `<div style="background: #1e293b; color: #e2e8f0; padding: 10px 15px; border-radius: 15px 15px 2px 15px; align-self: flex-start; max-width: 85%; font-size: 14px; border: 1px solid rgba(255,255,255,0.05);">${data.reply}</div>`;
+            } else {
+                msgs.innerHTML += `<div style="background: rgba(220,38,38,0.2); color: #fca5a5; padding: 10px; border-radius: 10px; font-size: 12px; text-align: center;">خطأ: ${data.reply}</div>`;
+            }
+
+        } catch (err) {
+            document.getElementById(loadId)?.remove();
+            msgs.innerHTML += `<div style="color: #ef4444; font-size: 12px; text-align: center;">فشل الاتصال: ${err.message}</div>`;
+        } finally {
+            input.disabled = false;
+            input.focus();
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+    };
+
+    // ================== MAIN TOOL LOGIC ==================
+    let currentCurrency = "DZD";
+    let currentLang = "ar";
+    let isEditingMargin = false;
+    let isEditingPrice = false;
+    let calculationResults = {};
+
+    const fxRates = { DZD: 248, MAD: 10, TND: 3.1 };
+    
+    // Translations object (content omitted for brevity, same as before)
+    const translations = {
+      ar: {
+        fxPrefix: "سعر الصرف افتراضي (USD → العملة): ",
+        fxHintNote: "يمكنك تغيير سعر الصرف من خانة “سعر الصرف” وسيُحفظ تلقائياً.",
+        heroTitle: "أداة تسعير المنتجات",
+        heroTag: "أداة احترافية لحساب تسعير المنتجات في التجارة الإلكترونية بالجزائر",
+        heroSub1: "توقع أرباحك ومصاريفك على مدار 30 يوم",
+        heroSub2: "احسب الخصم الأمثل دون خسارة أرباحك",
+        heroSub3: "تصور بياناتك بشكل مرئي وسهل الفهم",
+        tab_calculator: "حاسبة التسعير",
+        tab_monthly: "توقعات شهرية",
+        tab_discounts: "حاسبة الخصومات",
+        tab_charts: "الرسوم البيانية",
+        btn_save: "حفظ البيانات",
+        btn_load: "استرجاع",
+        btn_pdf: "تصدير PDF",
+        btn_reset: "مسح الكل",
+        btn_example: "مثال توضيحي",
+        inputsTitle: "الإدخالات",
+        lbl_productName: "اسم المنتج",
+        ph_productName: "مثال: ساعة ذكية",
+        lbl_wholesale: "سعر الشراء بالجملة (USD)",
+        lbl_exchange: "سعر الصرف",
+        lbl_confirm: "نسبة التأكيد (%)",
+        lbl_delivery: "نسبة التوصيل (%)",
+        lbl_dailyBudget: "الميزانية اليومية (USD)",
+        lbl_cpo: "التكلفة لكل طلب (USD)",
+        lbl_extra: "تكاليف إضافية (دج)",
+        lbl_returnCost: "تكلفة الإرجاع لكل طلب (دج)",
+        lbl_finalPrice: "السعر النهائي (دج)",
+        lbl_profitMargin: "الربح (دج)",
+        hint_finalPrice: "إذا كتبت السعر النهائي يتم حساب الربح تلقائياً",
+        hint_profit: "إذا كتبت الربح يتم اقتراح السعر النهائي تلقائياً",
+        lossWarning: "تحذير: أنت في خسارة",
+        lossHint: "راجع السعر أو التكاليف قبل إطلاق الحملات.",
+        sec_orders: "إجمالي الطلبات المتوقعة:",
+        dailyOrders: "الطلبات اليومية:",
+        confirmedOrders: "الطلبات المؤكدة:",
+        deliveredOrders: "الطلبات المستلمة:",
+        returnedOrders: "الطلبات المرتجعة:",
+        returnRate: "نسبة الإرجاع:",
+        returnCostDaily: "تكلفة الإرجاع اليومية:",
+        sec_marketing: "تحليل تكاليف التسويق",
+        cpo: "التكلفة لكل طلب:",
+        finalCpo: "التكلفة الفعلية:",
+        finalCpoDzd: "التكلفة الفعلية (DZD):",
+        sec_costDetails: "تفاصيل التكلفة",
+        wholesaleLine: "سعر الجملة:",
+        adsLine: "تكلفة الإعلانات:",
+        extraLine: "تكاليف إضافية:",
+        totalCost: "التكلفة الإجمالية:",
+        suggestedFinalPrice: "السعر النهائي المقترح",
+        currencyNote: "بالدينار (DZD) حسب سعر الصرف الحالي",
+        profitMargin: "هامش الربح:",
+        netProfit: "الربح الصافي:",
+        sec_dailyProfit: "تحليل الربح اليومي",
+        profitFormula: "المعادلة:",
+        sec_roi: "العائد على الاستثمار",
+        revenue: "الإيرادات اليومية:",
+        dailyCosts: "التكاليف اليومية:",
+        roi: "ROI",
+        monthlyTitle: "توقعات الربح الشهري",
+        monthlyHint: "حساب تقريبي على 30 يوم بناءً على قيمك الحالية",
+        monthlyRevenue: "الإيرادات الشهرية",
+        monthlyCosts: "التكاليف الشهرية",
+        monthlyProfit: "الربح الصافي الشهري",
+        monthlyDetails: "تفاصيل الشهر",
+        monthlyOrders: "الطلبات الشهرية",
+        monthlyDelivered: "الطلبات المستلمة",
+        monthlyReturned: "الطلبات المرتجعة",
+        monthlyReturnCost: "تكلفة الإرجاع الشهرية",
+        monthlyROI: "ROI",
+        monthlyInsightsTitle: "نصائح ذكية",
+        discountsTitle: "حاسبة العروض والخصومات",
+        discountsHint: "اختر نسبة الخصم وشاهد تأثيرها على الربح",
+        discountSliderTitle: "نسبة الخصم",
+        discountedPriceTitle: "السعر بعد الخصم",
+        discountedProfitTitle: "الربح بعد الخصم",
+        discountsTableTitle: "جدول الخصومات المقترحة",
+        chartsTitle: "الرسوم البيانية والتحليل",
+        chartsHint: "تحديث الرسوم يتم تلقائياً عند فتح التبويب",
+        chart_cost_breakdown: "توزيع التكاليف",
+        chart_profit_overview: "مقارنة الأرباح",
+        chart_daily_profit: "توقع الربح اليومي (30 يوم)",
+        chart_orders: "توزيع الطلبات",
+        chart_roi: "ROI",
+        footerTitle: "PRO • COD Pricing Tool",
+        footerSub: "v4.1 PRO • Dark Theme • PDF • Monthly • Charts • Discounts",
+        msg_pdf_generating: "جاري إنشاء ملف PDF...",
+        msg_pdf_done: "تم تصدير PDF بنجاح!",
+        msg_pdf_error: "حدث خطأ أثناء إنشاء PDF",
+        msg_saved: "تم حفظ البيانات بنجاح!",
+        msg_no_saved: "لا توجد بيانات محفوظة سابقاً!",
+        msg_loaded: "تم استرجاع البيانات بنجاح!",
+        msg_reset: "تم مسح جميع البيانات!",
+        msg_example: "تم تحميل المثال التوضيحي!",
+        confirm_reset: "هل أنت متأكد من مسح جميع البيانات؟",
+        insight_profit_high: "ربح شهري ممتاز.",
+        insight_profit_mid: "ربح جيد. حاول زيادة حجم المبيعات.",
+        insight_profit_low: "الربح منخفض. راجع التكاليف.",
+        insight_profit_neg: "أنت في خسارة. عدّل السعر أو قلّل التكاليف.",
+        insight_roi_high: "ROI ممتاز ({roi}%).",
+        insight_roi_mid: "ROI جيد ({roi}%).",
+        insight_roi_low: "ROI منخفض ({roi}%).",
+        insight_ret_high: "نسبة الإرجاع عالية ({rr}%).",
+        insight_ret_low: "نسبة الإرجاع منخفضة ({rr}%).",
+        status_loss: "خسارة",
+        status_low: "منخفض",
+        status_ok: "مقبول",
+        status_good: "جيد",
+        cur_dzd: "دج"
+      },
+      en: {
+        fxPrefix: "Default rate (USD → currency): ",
+        fxHintNote: "You can change the exchange rate in the “Exchange rate” field and it will be saved automatically.",
+        heroTitle: "Product Pricing Tool",
+        heroTag: "Pro COD pricing tool for e-commerce in Algeria",
+        heroSub1: "Forecast profits and costs over 30 days",
+        heroSub2: "Find the best discount without losing profit",
+        heroSub3: "Visualize your data clearly",
+        tab_calculator: "Calculator",
+        tab_monthly: "Monthly",
+        tab_discounts: "Discounts",
+        tab_charts: "Charts",
+        btn_save: "Save",
+        btn_load: "Load",
+        btn_pdf: "PDF",
+        btn_reset: "Reset",
+        btn_example: "Example",
+        inputsTitle: "Inputs",
+        lbl_productName: "Product name",
+        ph_productName: "Example: Smart watch",
+        lbl_wholesale: "Wholesale price (DZD)",
+        lbl_exchange: "Exchange rate",
+        lbl_confirm: "Confirmation rate (%)",
+        lbl_delivery: "Delivery rate (%)",
+        lbl_dailyBudget: "Daily budget (USD)",
+        lbl_cpo: "Cost per order (USD)",
+        lbl_extra: "Additional costs (DZD)",
+        lbl_returnCost: "Return cost per order (DZD)",
+        lbl_finalPrice: "Final price (DZD)",
+        lbl_profitMargin: "Profit (DZD)",
+        hint_finalPrice: "If you enter final price, profit will be calculated automatically",
+        hint_profit: "If you enter profit, final price will be suggested automatically",
+        lossWarning: "Warning: You are losing money",
+        lossHint: "Review price or costs before scaling ads.",
+        sec_orders: "Expected total orders:",
+        dailyOrders: "Daily orders:",
+        confirmedOrders: "Confirmed orders:",
+        deliveredOrders: "Delivered orders:",
+        returnedOrders: "Returned orders:",
+        returnRate: "Return rate:",
+        returnCostDaily: "Daily return cost:",
+        sec_marketing: "Marketing cost analysis",
+        cpo: "Cost per order:",
+        finalCpo: "Real cost per order:",
+        finalCpoDzd: "Real cost (DZD):",
+        sec_costDetails: "Cost details",
+        wholesaleLine: "Wholesale:",
+        adsLine: "Ads cost:",
+        extraLine: "Extra costs:",
+        totalCost: "Total cost:",
+        suggestedFinalPrice: "Suggested final price",
+        currencyNote: "In DZD based on current exchange rate",
+        profitMargin: "Profit margin:",
+        netProfit: "Net profit:",
+        sec_dailyProfit: "Daily profit analysis",
+        profitFormula: "Formula:",
+        sec_roi: "Return on investment",
+        revenue: "Daily revenue:",
+        dailyCosts: "Daily costs:",
+        roi: "ROI",
+        monthlyTitle: "Monthly profit forecast",
+        monthlyHint: "30-day estimate based on your inputs",
+        monthlyRevenue: "Monthly revenue",
+        monthlyCosts: "Monthly costs",
+        monthlyProfit: "Monthly net profit",
+        monthlyDetails: "Monthly details",
+        monthlyOrders: "Monthly orders",
+        monthlyDelivered: "Delivered orders",
+        monthlyReturned: "Returned orders",
+        monthlyReturnCost: "Monthly return cost",
+        monthlyROI: "ROI",
+        monthlyInsightsTitle: "Smart insights",
+        discountsTitle: "Discount calculator",
+        discountsHint: "Choose a discount and see its impact on profit",
+        discountSliderTitle: "Discount percentage",
+        discountedPriceTitle: "Discounted price",
+        discountedProfitTitle: "Discounted profit",
+        discountsTableTitle: "Suggested discounts table",
+        chartsTitle: "Charts & analysis",
+        chartsHint: "Charts update automatically when you open this tab",
+        chart_cost_breakdown: "Cost breakdown",
+        chart_profit_overview: "Profit overview",
+        chart_daily_profit: "Daily net profit forecast (30 days)",
+        chart_orders: "Orders distribution",
+        chart_roi: "ROI",
+        footerTitle: "PRO • COD Pricing Tool",
+        footerSub: "v4.1 PRO • Dark Theme • PDF • Monthly • Charts • Discounts",
+        msg_pdf_generating: "Generating PDF...",
+        msg_pdf_done: "PDF exported successfully!",
+        msg_pdf_error: "Error while generating PDF",
+        msg_saved: "Data saved successfully!",
+        msg_no_saved: "No saved data found!",
+        msg_loaded: "Data loaded successfully!",
+        msg_reset: "All data cleared!",
+        msg_example: "Example loaded!",
+        confirm_reset: "Are you sure you want to clear all data?",
+        insight_profit_high: "Excellent monthly profit.",
+        insight_profit_mid: "Good profit. Try increasing volume.",
+        insight_profit_low: "Low profit. Review your costs.",
+        insight_profit_neg: "You are losing money. Adjust price or reduce costs.",
+        insight_roi_high: "Excellent ROI ({roi}%).",
+        insight_roi_mid: "Good ROI ({roi}%).",
+        insight_roi_low: "Low ROI ({roi}%).",
+        insight_ret_high: "High return rate ({rr}%).",
+        insight_ret_low: "Low return rate ({rr}%).",
+        status_loss: "Loss",
+        status_low: "Low",
+        status_ok: "OK",
+        status_good: "Good",
+        cur_dzd: "DZD"
+      },
+      fr: {
+        fxPrefix: "Taux par défaut (USD → devise) : ",
+        fxHintNote: "Vous pouvez modifier le taux de change dans le champ « Taux de change » et il sera enregistré automatiquement.",
+        heroTitle: "Outil de tarification produit",
+        heroTag: "Outil pro de tarification COD pour e-commerce en Algérie",
+        heroSub1: "Prévisions des bénéfices et coûts sur 30 jours",
+        heroSub2: "Trouvez la meilleure remise sans perdre de profit",
+        heroSub3: "Visualisez vos données clairement",
+        tab_calculator: "Calculatrice",
+        tab_monthly: "Mensuel",
+        tab_discounts: "Remises",
+        tab_charts: "Graphiques",
+        btn_save: "Sauvegarder",
+        btn_load: "Charger",
+        btn_pdf: "PDF",
+        btn_reset: "Réinitialiser",
+        btn_example: "Exemple",
+        inputsTitle: "Entrées",
+        lbl_productName: "Nom du produit",
+        ph_productName: "Exemple : Montre intelligente",
+        lbl_wholesale: "Prix de gros (USD)",
+        lbl_exchange: "Taux de change",
+        lbl_confirm: "Taux de confirmation (%)",
+        lbl_delivery: "Taux de livraison (%)",
+        lbl_dailyBudget: "Budget quotidien (USD)",
+        lbl_cpo: "Coût par commande (USD)",
+        lbl_extra: "Coûts supplémentaires (DZD)",
+        lbl_returnCost: "Coût de retour par commande (DZD)",
+        lbl_finalPrice: "Prix final (DZD)",
+        lbl_profitMargin: "Profit (DZD)",
+        hint_finalPrice: "Si vous entrez le prix final, le profit sera calculé automatiquement",
+        hint_profit: "Si vous entrez le profit, le prix final sera suggéré automatiquement",
+        lossWarning: "Attention : Vous perdez de l'argent",
+        lossHint: "Révisez le prix ou les coûts avant de lancer les pubs.",
+        sec_orders: "Commandes totales prévues :",
+        dailyOrders: "Commandes quotidiennes :",
+        confirmedOrders: "Commandes confirmées :",
+        deliveredOrders: "Commandes livrées :",
+        returnedOrders: "Commandes retournées :",
+        returnRate: "Taux de retour :",
+        returnCostDaily: "Coût de retour quotidien :",
+        sec_marketing: "Analyse des coûts marketing",
+        cpo: "Coût par commande :",
+        finalCpo: "Coût réel par commande :",
+        finalCpoDzd: "Coût réel (DZD) :",
+        sec_costDetails: "Détails des coûts",
+        wholesaleLine: "Prix de gros :",
+        adsLine: "Coût pub :",
+        extraLine: "Coûts extra :",
+        totalCost: "Coût total :",
+        suggestedFinalPrice: "Prix final suggéré",
+        currencyNote: "En DZD selon le taux de change actuel",
+        profitMargin: "Marge bénéficiaire :",
+        netProfit: "Bénéfice net :",
+        sec_dailyProfit: "Analyse du bénéfice quotidien",
+        profitFormula: "Formule :",
+        sec_roi: "Retour sur investissement",
+        revenue: "Revenu quotidien :",
+        dailyCosts: "Coûts quotidiens :",
+        roi: "ROI",
+        monthlyTitle: "Prévisions de bénéfices mensuels",
+        monthlyHint: "Estimation sur 30 jours basée sur vos entrées",
+        monthlyRevenue: "Revenu mensuel",
+        monthlyCosts: "Coûts mensuels",
+        monthlyProfit: "Bénéfice net mensuel",
+        monthlyDetails: "Détails mensuels",
+        monthlyOrders: "Commandes mensuelles",
+        monthlyDelivered: "Commandes livrées",
+        monthlyReturned: "Commandes retournées",
+        monthlyReturnCost: "Coût de retour mensuel",
+        monthlyROI: "ROI",
+        monthlyInsightsTitle: "Conseils intelligents",
+        discountsTitle: "Calculatrice de remises",
+        discountsHint: "Choisissez une remise et voyez son impact sur le profit",
+        discountSliderTitle: "Pourcentage de remise",
+        discountedPriceTitle: "Prix après remise",
+        discountedProfitTitle: "Profit après remise",
+        discountsTableTitle: "Tableau des remises suggérées",
+        chartsTitle: "Graphiques et analyses",
+        chartsHint: "Les graphiques se mettent à jour automatiquement à l'ouverture de l'onglet",
+        chart_cost_breakdown: "Répartition des coûts",
+        chart_profit_overview: "Aperçu des bénéfices",
+        chart_daily_profit: "Prévision bénéfice quotidien (30 jours)",
+        chart_orders: "Répartition des commandes",
+        chart_roi: "ROI",
+        footerTitle: "PRO • COD Pricing Tool",
+        footerSub: "v4.1 PRO • Thème Sombre • PDF • Mensuel • Graphiques • Remises",
+        msg_pdf_generating: "Génération du PDF...",
+        msg_pdf_done: "PDF exporté avec succès !",
+        msg_pdf_error: "Erreur lors de la génération du PDF",
+        msg_saved: "Données enregistrées avec succès !",
+        msg_no_saved: "Aucune donnée enregistrée trouvée !",
+        msg_loaded: "Données chargées avec succès !",
+        msg_reset: "Toutes les données effacées !",
+        msg_example: "Exemple chargé !",
+        confirm_reset: "Êtes-vous sûr de vouloir effacer toutes les données ?",
+        insight_profit_high: "Excellent bénéfice mensuel.",
+        insight_profit_mid: "Bon bénéfice. Essayez d'augmenter le volume.",
+        insight_profit_low: "Faible bénéfice. Révisez vos coûts.",
+        insight_profit_neg: "Vous perdez de l'argent. Ajustez le prix ou réduisez les coûts.",
+        insight_roi_high: "Excellent ROI ({roi}%).",
+        insight_roi_mid: "Bon ROI ({roi}%).",
+        insight_roi_low: "Faible ROI ({roi}%).",
+        insight_ret_high: "Taux de retour élevé ({rr}%).",
+        insight_ret_low: "Taux de retour faible ({rr}%).",
+        status_loss: "Perte",
+        status_low: "Faible",
+        status_ok: "OK",
+        status_good: "Bon",
+        cur_dzd: "DA"
+      }
+    };
+
+    function t(key, params = {}) {
+      let str = translations[currentLang][key] || key;
+      Object.keys(params).forEach(k => {
+        str = str.replace(`{${k}}`, params[k]);
+      });
+      return str;
+    }
+
+    function applyTranslations() {
+      document.querySelectorAll("[data-i18n]").forEach(el => {
+        const key = el.getAttribute("data-i18n");
+        el.textContent = t(key);
+      });
+      document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+        const key = el.getAttribute("data-i18n-placeholder");
+        el.placeholder = t(key);
+      });
+      const hint = document.getElementById("fxHint");
+      if(hint) hint.textContent = `${currentCurrency} ${(getStoredFx(currentCurrency) || fxRates[currentCurrency]).toFixed(2)}`;
+    }
+
+    function changeLanguage(lang) {
+      currentLang = lang;
+      document.documentElement.lang = lang;
+      document.documentElement.dir = (lang === "ar") ? "rtl" : "ltr";
+      setActiveByData("[data-lang]", "lang", lang);
+      applyTranslations();
+      calculate();
+      calculateMonthly();
+    }
+
+    function setActiveByData(selector, dataAttr, value) {
+      document.querySelectorAll(selector).forEach(btn => {
+        if(btn.dataset[dataAttr] === value) btn.classList.add("active");
+        else btn.classList.remove("active");
+      });
+    }
+
+    function changeCurrency(curr) {
+      currentCurrency = curr;
+      setActiveByData("[data-currency]", "currency", curr);
+      
+      const stored = getStoredFx(curr);
+      const exInput = document.getElementById("exchangeRate");
+      if(exInput) {
+        exInput.value = stored ? stored : (fxRates[curr] || "");
+      }
+      
+      applyTranslations();
+      calculate(); 
+      calculateMonthly();
+    }
+
+    function onExchangeInput() {
+      const val = parseFloat(document.getElementById("exchangeRate").value);
+      if(!isNaN(val)) {
+        localStorage.setItem(`fx_${currentCurrency}`, val);
+        const hint = document.getElementById("fxHint");
+        if(hint) hint.textContent = `${currentCurrency} ${val.toFixed(2)}`;
+        calculate();
+        calculateMonthly();
+      }
+    }
+
+    function getStoredFx(curr) {
+      const s = localStorage.getItem(`fx_${curr}`);
+      return s ? parseFloat(s) : null;
+    }
+
+    function switchTab(tabName, btnElement) {
+      document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
+      document.getElementById(`tab-${tabName}`).classList.add("active");
+      document.querySelectorAll(".tab-button").forEach(el => el.classList.remove("active"));
+      btnElement.classList.add("active");
+      
+      if(tabName === "charts") updateCharts();
+      if(tabName === "discounts") calculateDiscount();
+    }
+    
+    // Scenario Function
+    function applyScenario(num) {
+      const scenarios = {
+        1: { wholesale: 1000, exchange: 250, confirm: 60, delivery: 80, ads: 20, cpo: 2.5, extra: 200, return: 300, profit: 800 },
+        2: { wholesale: 1500, exchange: 245, confirm: 70, delivery: 85, ads: 30, cpo: 3.0, extra: 250, return: 350, profit: 1200 },
+        3: { wholesale: 2000, exchange: 248, confirm: 50, delivery: 75, ads: 50, cpo: 4.0, extra: 300, return: 400, profit: 1500 },
+        4: { wholesale: 800, exchange: 250, confirm: 80, delivery: 90, ads: 15, cpo: 1.5, extra: 150, return: 250, profit: 600 }
+      };
+      
+      const s = scenarios[num];
+      if(!s) return;
+      
+      if(document.getElementById("wholesalePrice")) document.getElementById("wholesalePrice").value = s.wholesale;
+      if(document.getElementById("exchangeRate")) document.getElementById("exchangeRate").value = s.exchange;
+      if(document.getElementById("confirmRate")) document.getElementById("confirmRate").value = s.confirm;
+      if(document.getElementById("deliveryRate")) document.getElementById("deliveryRate").value = s.delivery;
+      if(document.getElementById("dailyAdSpend")) document.getElementById("dailyAdSpend").value = s.ads;
+      if(document.getElementById("costPerOrder")) document.getElementById("costPerOrder").value = s.cpo;
+      if(document.getElementById("additionalCosts")) document.getElementById("additionalCosts").value = s.extra;
+      if(document.getElementById("returnCost")) document.getElementById("returnCost").value = s.return;
+      
+      if(document.getElementById("profitMarginInput")) document.getElementById("profitMarginInput").value = s.profit;
+      isEditingMargin = true;
+      isEditingPrice = false;
+      
+      calculate();
+      calculateMonthly();
+      calculateDiscount();
+      showSuccessMessage(`تم تطبيق سيناريو ${num}`, "info");
+    }
+
+    function onFinalPriceChange() {
+      isEditingPrice = true;
+      isEditingMargin = false;
+      calculate();
+    }
+    function onProfitMarginChange() {
+      isEditingMargin = true;
+      isEditingPrice = false;
+      calculate();
+    }
+
+    function calculate() {
+      const wholesale = parseFloat(document.getElementById("wholesalePrice").value) || 0;
+      const exchange = parseFloat(document.getElementById("exchangeRate").value) || 0;
+      const confirm = parseFloat(document.getElementById("confirmRate").value) || 0;
+      const delivery = parseFloat(document.getElementById("deliveryRate").value) || 0;
+      const dailyAd = parseFloat(document.getElementById("dailyAdSpend").value) || 0;
+      const costPer = parseFloat(document.getElementById("costPerOrder").value) || 0;
+      const additionalCostsValue = parseFloat(document.getElementById("additionalCosts").value) || 0;
+      const returnCost = parseFloat(document.getElementById("returnCost").value) || 0;
+
+      const dailyOrders = costPer > 0 ? (dailyAd / costPer) : 0;
+      const confirmedOrders = dailyOrders * (confirm / 100);
+      const deliveredOrders = confirmedOrders * (delivery / 100);
+      const returnedOrders = confirmedOrders - deliveredOrders;
+      const returnRate = confirmedOrders > 0 ? (returnedOrders / confirmedOrders) * 100 : 0;
+
+      const totalReturnCost = returnedOrders * returnCost;
+      const finalCostPerOrder = dailyOrders > 0 ? (dailyAd / dailyOrders) : 0;
+      const finalCostDZD = finalCostPerOrder * exchange;
+      
+      // Cost of Sold Goods = wholesale + ads + extra + (returnCost distributed)
+      // Actually we sum total costs then divide or sum per unit
+      const totalCost = wholesale + finalCostDZD + additionalCostsValue + (deliveredOrders > 0 ? (totalReturnCost / deliveredOrders) : 0);
+
+      let calculatedFinalPrice = 0;
+      let profitMargin = 0;
+
+      if (isEditingPrice) {
+        calculatedFinalPrice = parseFloat(document.getElementById("finalPrice").value) || 0;
+        profitMargin = calculatedFinalPrice - totalCost;
+        if(document.getElementById("profitMarginInput")) {
+            // Avoid infinite loop by only setting if not focused or carefully
+            // But here we just update display or value. 
+            // Better to only update value if user is not typing in it
+            if(document.activeElement.id !== "profitMarginInput") {
+                document.getElementById("profitMarginInput").value = profitMargin > 0 ? profitMargin.toFixed(0) : 0;
+            }
+        }
+      } else {
+        // Default or margin editing
+        profitMargin = parseFloat(document.getElementById("profitMarginInput").value) || 0;
+        calculatedFinalPrice = totalCost + profitMargin;
+        if(document.activeElement.id !== "finalPrice") {
+             document.getElementById("finalPrice").value = calculatedFinalPrice > 0 ? calculatedFinalPrice.toFixed(0) : 0;
+        }
+      }
+
+      const netProfit = profitMargin; // Per unit
+      const dailyNetProfit = (netProfit * deliveredOrders) - totalReturnCost; // Wait, totalReturnCost is already in unit cost? 
+      // Let's refine formula:
+      // Unit Cost (Sold) = Wholesale + Ad(allocated) + Extra + Return(allocated)
+      // Unit Profit = Price - Unit Cost
+      // Daily Profit = Unit Profit * Delivered
+      // This matches: (Price * Del) - (Unit Cost * Del)
+      // Unit Cost * Del = (Whole*Del) + (Ad*Del/Orders? No Ad is fixed daily)
+      
+      // Let's stick to simple Daily P&L:
+      // Revenue = Price * Delivered
+      // Expenses = (Whole * Delivered) + (Ads Daily * Exch) + (Extra * Delivered) + (Return * Returned)
+      // Profit = Revenue - Expenses
+      
+      // Re-calculate based on daily totals for accuracy
+      const dailyRevenue = calculatedFinalPrice * deliveredOrders;
+      const dailyWholesaleCost = wholesale * deliveredOrders; // Assuming we only pay wholesale for delivered? Usually confirm but let's assume COD model often only pays for what ships/delivers or maybe ships. 
+      // If we buy stock upfront, it's different. Dropshipping model: pay when confirmed/shipped.
+      // Let's assume we pay wholesale for every CONFIRMED order (shipped), then returned ones come back? 
+      // Simple model: Cost of Goods Sold (COGS) for delivered items. Returned items go back to stock (minus return fees).
+      
+      const dailyTotalExpenses = (wholesale * deliveredOrders) + (dailyAd * exchange) + (additionalCostsValue * deliveredOrders) + (returnedOrders * returnCost);
+      
+      // Recalculate Unit metrics based on these daily totals to be consistent
+      // Unit Profit = (Daily Revenue - Daily Expenses) / Delivered
+      
+      const realDailyProfit = dailyRevenue - dailyTotalExpenses;
+      const realUnitProfit = deliveredOrders > 0 ? (realDailyProfit / deliveredOrders) : 0;
+      
+      // Update the variables used for display
+      const roi = dailyTotalExpenses > 0 ? (realDailyProfit / dailyTotalExpenses) * 100 : 0;
+      
+      calculationResults = {
+        wholesale, exchange, confirm, delivery, dailyAd, costPer, additionalCostsValue, returnCost,
+        dailyOrders, confirmedOrders, deliveredOrders, returnedOrders, returnRate,
+        totalReturnCost, finalCostPerOrder, finalCostDZD,
+        totalCost: (dailyTotalExpenses / (deliveredOrders || 1)), // Approx unit cost
+        calculatedFinalPrice, 
+        profitMargin: realUnitProfit, 
+        netProfit: realUnitProfit,
+        dailyNetProfit: realDailyProfit, 
+        revenue: dailyRevenue, 
+        totalDailyCosts: dailyTotalExpenses, 
+        roi
+      };
+
+      // ===== DISPLAY =====
+      document.getElementById("dailyOrders").textContent = dailyOrders.toFixed(0);
+      document.getElementById("confirmedOrders").textContent = confirmedOrders.toFixed(0);
+      document.getElementById("deliveredOrders").textContent = deliveredOrders.toFixed(0);
+      document.getElementById("returnedOrders").textContent = returnedOrders.toFixed(0);
+      document.getElementById("returnRate").textContent = `${returnRate.toFixed(0)}%`;
+
+      document.getElementById("costPerOrderDisplay").textContent = costPer.toFixed(2);
+      document.getElementById("finalCostPerOrder").textContent = finalCostPerOrder.toFixed(2);
+      document.getElementById("finalCostDZD").textContent = finalCostDZD.toFixed(0);
+
+      document.getElementById("wholesalePriceDisplay").textContent = wholesale.toFixed(0);
+      document.getElementById("adCostDisplay").textContent = finalCostDZD.toFixed(0);
+      
+      // Display Unit Cost approx
+      const unitCostDisplay = deliveredOrders > 0 ? (dailyTotalExpenses / deliveredOrders) : 0;
+      document.getElementById("totalCost").textContent = unitCostDisplay.toFixed(0);
+
+      document.getElementById("finalPriceDisplay").textContent = calculatedFinalPrice.toFixed(0);
+      document.getElementById("profitMarginDisplay").textContent = realUnitProfit.toFixed(0);
+      document.getElementById("netProfitDisplay").textContent = realUnitProfit.toFixed(0);
+
+      if (returnCost > 0 && returnedOrders > 0){
+        document.getElementById("returnCostRow").classList.remove("hidden");
+        document.getElementById("totalReturnCost").textContent = (returnedOrders * returnCost).toFixed(0);
+        document.getElementById("dailyProfitCalc").textContent = `${dailyRevenue.toFixed(0)} - ${dailyTotalExpenses.toFixed(0)}`;
+      } else {
+        document.getElementById("returnCostRow").classList.add("hidden");
+        document.getElementById("dailyProfitCalc").textContent = `${dailyRevenue.toFixed(0)} - ${dailyTotalExpenses.toFixed(0)}`;
+      }
+
+      document.getElementById("dailyNetProfit").textContent = realDailyProfit.toFixed(0);
+      document.getElementById("revenue").textContent = dailyRevenue.toFixed(0);
+      document.getElementById("totalDailyCosts").textContent = dailyTotalExpenses.toFixed(0);
+      document.getElementById("roi").textContent = `${roi.toFixed(0)}%`;
+
+      if (additionalCostsValue > 0){
+        document.getElementById("additionalCostsRow").classList.remove("hidden");
+        document.getElementById("additionalCostsDisplay").textContent = additionalCostsValue.toFixed(0);
+      } else {
+        document.getElementById("additionalCostsRow").classList.add("hidden");
+      }
+
+      const lossWarning = document.getElementById("lossWarning");
+      if (realDailyProfit < 0) lossWarning.classList.remove("hidden");
+      else lossWarning.classList.add("hidden");
+    }
+
+    function calculateMonthly(){
+      if (!calculationResults.dailyNetProfit && calculationResults.dailyNetProfit !== 0) calculate();
+
+      const monthlyRevenue = calculationResults.revenue * 30;
+      const monthlyCosts = calculationResults.totalDailyCosts * 30;
+      const monthlyProfit = calculationResults.dailyNetProfit * 30;
+      const monthlyOrders = calculationResults.dailyOrders * 30;
+      const monthlyDelivered = calculationResults.deliveredOrders * 30;
+      const monthlyReturned = calculationResults.returnedOrders * 30;
+      const monthlyReturnCostTotal = (calculationResults.returnedOrders * parseFloat(document.getElementById("returnCost").value || 0)) * 30;
+      const monthlyROI = calculationResults.roi;
+
+      document.getElementById("monthlyRevenue").textContent = monthlyRevenue.toLocaleString();
+      document.getElementById("monthlyCosts").textContent = monthlyCosts.toLocaleString();
+      document.getElementById("monthlyProfit").textContent = monthlyProfit.toLocaleString();
+
+      document.getElementById("monthlyOrders").textContent = monthlyOrders.toFixed(0);
+      document.getElementById("monthlyDelivered").textContent = monthlyDelivered.toFixed(0);
+      document.getElementById("monthlyReturned").textContent = monthlyReturned.toFixed(0);
+      document.getElementById("monthlyReturnCost").textContent = monthlyReturnCostTotal.toLocaleString();
+      document.getElementById("monthlyROI").textContent = `${monthlyROI.toFixed(1)}%`;
+
+      // Insights
+      const insightsDiv = document.getElementById("monthlyInsights");
+      insightsDiv.innerHTML = "";
+      
+      const addInsight = (text, colorClass) => {
+        const div = document.createElement("div");
+        div.className = `p-3 rounded-lg border ${colorClass} bg-opacity-10 flex items-center gap-2`;
+        div.innerHTML = text;
+        insightsDiv.appendChild(div);
+      };
+
+      if(monthlyProfit > 1000000) addInsight("🚀 " + t("insight_profit_high"), "border-emerald-500 bg-emerald-500 text-emerald-200");
+      else if(monthlyProfit > 200000) addInsight("✅ " + t("insight_profit_mid"), "border-blue-500 bg-blue-500 text-blue-200");
+      else if(monthlyProfit > 0) addInsight("⚠️ " + t("insight_profit_low"), "border-orange-500 bg-orange-500 text-orange-200");
+      else addInsight("🛑 " + t("insight_profit_neg"), "border-red-500 bg-red-500 text-red-200");
+
+      if(monthlyROI > 200) addInsight("🔥 " + t("insight_roi_high", {roi: monthlyROI.toFixed(0)}), "border-emerald-500 bg-emerald-500 text-emerald-200");
+      else if(monthlyROI > 50) addInsight("📈 " + t("insight_roi_mid", {roi: monthlyROI.toFixed(0)}), "border-blue-500 bg-blue-500 text-blue-200");
+      else addInsight("📉 " + t("insight_roi_low", {roi: monthlyROI.toFixed(0)}), "border-red-500 bg-red-500 text-red-200");
+
+      if(calculationResults.returnRate > 30) addInsight("📦 " + t("insight_ret_high", {rr: calculationResults.returnRate.toFixed(0)}), "border-red-500 bg-red-500 text-red-200");
+    }
+
+    function calculateDiscount() {
+      const discount = parseInt(document.getElementById("discountSlider").value);
+      document.getElementById("discountPercent").textContent = discount;
+
+      const basePrice = calculationResults.calculatedFinalPrice || 0;
+      const baseProfit = calculationResults.netProfit || 0;
+      
+      const discountedPrice = basePrice * (1 - (discount / 100));
+      const discountedProfit = baseProfit - (basePrice - discountedPrice);
+
+      document.getElementById("discountedPrice").textContent = discountedPrice.toFixed(0);
+      document.getElementById("discountedProfit").textContent = discountedProfit.toFixed(0);
+
+      // Table
+      const table = document.getElementById("discountTable");
+      table.innerHTML = "";
+      
+      [5, 10, 15, 20, 25, 30].forEach(d => {
+        const p = basePrice * (1 - (d / 100));
+        const prof = baseProfit - (basePrice - p);
+        const row = document.createElement("div");
+        row.className = "flex justify-between p-3 glass rounded-lg items-center";
+        row.innerHTML = `
+          <div class="font-bold text-white">-${d}%</div>
+          <div class="text-white/80">${p.toFixed(0)} ${t("cur_dzd")}</div>
+          <div class="font-bold ${prof > 0 ? 'text-emerald-300' : 'text-red-300'}">${prof.toFixed(0)} ${t("cur_dzd")}</div>
+        `;
+        table.appendChild(row);
+      });
+    }
+
+    // Charts
+    let costPieChart, profitBarChart, monthlyLineChart, ordersDonutChart, roiChart;
+
+    function updateCharts() {
+      if(!calculationResults.revenue) return;
+      
+      const r = calculationResults;
+      const ctx1 = document.getElementById('costPieChart');
+      const ctx2 = document.getElementById('profitBarChart');
+      const ctx3 = document.getElementById('monthlyLineChart');
+      const ctx4 = document.getElementById('ordersDonutChart');
+      const ctx5 = document.getElementById('roiChart');
+
+      if(costPieChart) costPieChart.destroy();
+      if(profitBarChart) profitBarChart.destroy();
+      if(monthlyLineChart) monthlyLineChart.destroy();
+      if(ordersDonutChart) ordersDonutChart.destroy();
+      if(roiChart) roiChart.destroy();
+
+      Chart.defaults.color = 'rgba(255,255,255,0.7)';
+      Chart.defaults.borderColor = 'rgba(255,255,255,0.1)';
+
+      // 1. Cost Breakdown
+      // Wholesale total, Ads total, Extra total, Return total
+      const totalWholesale = r.wholesale * r.deliveredOrders; // Approx
+      const totalAds = r.dailyAd * r.exchange;
+      const totalExtra = r.additionalCostsValue * r.deliveredOrders;
+      const totalReturn = r.returnedOrders * r.returnCost;
+      
+      costPieChart = new Chart(ctx1, {
+        type: 'doughnut',
+        data: {
+          labels: [t('wholesaleLine'), t('adsLine'), t('extraLine'), t('returnedOrders')],
+          datasets: [{
+            data: [totalWholesale, totalAds, totalExtra, totalReturn],
+            backgroundColor: ['#8b5cf6', '#22d3ee', '#f59e0b', '#ef4444'],
+            borderWidth: 0
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+      });
+
+      // 2. Profit vs Revenue
+      profitBarChart = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+          labels: [t('revenue'), t('totalCost'), t('netProfit')],
+          datasets: [{
+            label: 'Daily Values',
+            data: [r.revenue, r.totalDailyCosts, r.dailyNetProfit],
+            backgroundColor: ['#10b981', '#ef4444', '#8b5cf6'],
+            borderRadius: 8
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+      });
+
+      // 3. Monthly Projection Line
+      const days = Array.from({length: 30}, (_, i) => i + 1);
+      const profitData = days.map(d => r.dailyNetProfit * d);
+      
+      monthlyLineChart = new Chart(ctx3, {
+        type: 'line',
+        data: {
+          labels: days,
+          datasets: [{
+            label: t('monthlyProfit'),
+            data: profitData,
+            borderColor: '#22d3ee',
+            backgroundColor: 'rgba(34,211,238,0.1)',
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+
+      // 4. Orders Donut
+      ordersDonutChart = new Chart(ctx4, {
+        type: 'doughnut',
+        data: {
+          labels: [t('deliveredOrders'), t('returnedOrders')],
+          datasets: [{
+            data: [r.deliveredOrders, r.returnedOrders],
+            backgroundColor: ['#10b981', '#ef4444'],
+            borderWidth: 0
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+      });
+
+      // 5. ROI Gauge (Doughnut trick)
+      // ROI can be 0 to >100. Let's show it as a single value or simple bar
+      // Let's do a bar for simplicity or a gauge
+      roiChart = new Chart(ctx5, {
+        type: 'bar',
+        data: {
+          labels: ['ROI %'],
+          datasets: [{
+            data: [r.roi],
+            backgroundColor: r.roi > 0 ? '#10b981' : '#ef4444',
+            borderRadius: 10,
+            barThickness: 40
+          }]
+        },
+        options: { 
+            indexAxis: 'y', 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            plugins: { legend: { display: false } },
+            scales: { x: { min: 0 } }
+        }
+      });
+    }
+
+    function showSuccessMessage(message, type = "success"){
+      const messageDiv = document.getElementById("successMessage");
+      const messageText = document.getElementById("successText");
+      if (!messageDiv || !messageText) return;
+
+      messageText.textContent = message;
+      messageDiv.classList.remove("hidden");
+
+      setTimeout(() => {
+        messageDiv.classList.add("hidden");
+      }, 3000);
+    }
+
+    function hideSuccessMessage(){
+      document.getElementById("successMessage")?.classList.add("hidden");
+    }
+
+    function saveData(){
+      const data = {
+        productName: document.getElementById("productName")?.value || "",
+        wholesalePrice: document.getElementById("wholesalePrice")?.value || "",
+        exchangeRate: document.getElementById("exchangeRate")?.value || "",
+        confirmRate: document.getElementById("confirmRate")?.value || "",
+        deliveryRate: document.getElementById("deliveryRate")?.value || "",
+        dailyAdSpend: document.getElementById("dailyAdSpend")?.value || "",
+        costPerOrder: document.getElementById("costPerOrder")?.value || "",
+        additionalCosts: document.getElementById("additionalCosts")?.value || "",
+        returnCost: document.getElementById("returnCost")?.value || "",
+        finalPrice: document.getElementById("finalPrice")?.value || "",
+        profitMarginInput: document.getElementById("profitMarginInput")?.value || "",
+        lang: currentLang,
+        currency: currentCurrency,
+        timestamp: new Date().toISOString()
+      };
+
+      localStorage.setItem("pricingToolData", JSON.stringify(data));
+      showSuccessMessage(t("msg_saved"), "success");
+    }
+
+    function loadData(){
+      const saved = localStorage.getItem("pricingToolData");
+      if (!saved){
+        showSuccessMessage(t("msg_no_saved"), "warning");
+        return;
+      }
+
+      const data = JSON.parse(saved);
+
+      if (document.getElementById("productName")) document.getElementById("productName").value = data.productName ?? "";
+      if (document.getElementById("wholesalePrice")) document.getElementById("wholesalePrice").value = data.wholesalePrice ?? "";
+      if (document.getElementById("exchangeRate")) document.getElementById("exchangeRate").value = data.exchangeRate ?? (fxRates[currentCurrency] ?? fxRates.DZD);
+      if (document.getElementById("confirmRate")) document.getElementById("confirmRate").value = data.confirmRate ?? "";
+      if (document.getElementById("deliveryRate")) document.getElementById("deliveryRate").value = data.deliveryRate ?? "";
+      if (document.getElementById("dailyAdSpend")) document.getElementById("dailyAdSpend").value = data.dailyAdSpend ?? "";
+      if (document.getElementById("costPerOrder")) document.getElementById("costPerOrder").value = data.costPerOrder ?? "";
+      if (document.getElementById("additionalCosts")) document.getElementById("additionalCosts").value = data.additionalCosts ?? "";
+      if (document.getElementById("returnCost")) document.getElementById("returnCost").value = data.returnCost ?? "";
+      if (document.getElementById("finalPrice")) document.getElementById("finalPrice").value = data.finalPrice ?? "";
+      if (document.getElementById("profitMarginInput")) document.getElementById("profitMarginInput").value = data.profitMarginInput ?? "";
+
+      if (data.currency) currentCurrency = data.currency;
+      if (data.lang) currentLang = data.lang;
+
+      setActiveByData("[data-lang]", "lang", currentLang);
+      setActiveByData("[data-currency]", "currency", currentCurrency);
+
+      applyTranslations();
+      changeCurrency(currentCurrency);
+      changeLanguage(currentLang);
+
+      calculate();
+      calculateMonthly();
+      calculateDiscount();
+
+      showSuccessMessage(t("msg_loaded"), "success");
+    }
+
+    function resetAll(){
+      if (!confirm(t("confirm_reset"))) return;
+
+      const ids = [
+        "productName","wholesalePrice","exchangeRate","confirmRate","deliveryRate",
+        "dailyAdSpend","costPerOrder","additionalCosts","returnCost","finalPrice","profitMarginInput"
+      ];
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+      });
+
+      isEditingPrice = false;
+      isEditingMargin = false;
+
+      const ex = document.getElementById("exchangeRate");
+      if (ex) ex.value = getStoredFx(currentCurrency) ?? (fxRates[currentCurrency] ?? fxRates.DZD);
+
+      calculate();
+      calculateMonthly();
+      calculateDiscount();
+      if (document.getElementById("tab-charts")?.classList.contains("active")) updateCharts();
+
+      showSuccessMessage(t("msg_reset"), "success");
+    }
+
+    function loadExample(){
+      if (document.getElementById("productName")) document.getElementById("productName").value = "منتج تجريبي";
+      if (document.getElementById("wholesalePrice")) document.getElementById("wholesalePrice").value = 1200;
+      if (document.getElementById("exchangeRate")) document.getElementById("exchangeRate").value = (fxRates[currentCurrency] ?? fxRates.DZD);
+      if (document.getElementById("confirmRate")) document.getElementById("confirmRate").value = 60;
+      if (document.getElementById("deliveryRate")) document.getElementById("deliveryRate").value = 80;
+      if (document.getElementById("dailyAdSpend")) document.getElementById("dailyAdSpend").value = 25;
+      if (document.getElementById("costPerOrder")) document.getElementById("costPerOrder").value = 2.5;
+      if (document.getElementById("additionalCosts")) document.getElementById("additionalCosts").value = 200;
+      if (document.getElementById("returnCost")) document.getElementById("returnCost").value = 300;
+
+      if (document.getElementById("profitMarginInput")) document.getElementById("profitMarginInput").value = 800;
+      isEditingMargin = true;
+      isEditingPrice = false;
+
+      calculate();
+      calculateMonthly();
+      calculateDiscount();
+
+      showSuccessMessage(t("msg_example"), "success");
+    }
+
+    async function exportToPDF(){
+      try{
+        showSuccessMessage(t("msg_pdf_generating"), "info");
+
+        const { jsPDF } = window.jspdf || {};
+        if (!jsPDF || !window.html2canvas){
+          showSuccessMessage(t("msg_pdf_error"), "danger");
+          return;
+        }
+
+        const node = document.querySelector(".content") || document.body;
+        const canvas = await html2canvas(node, { scale: 2, backgroundColor: "#ffffff" });
+        const imgData = canvas.toDataURL("image/png");
+
+        const pdf = new jsPDF("p", "mm", "a4");
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+
+        const imgWidth = pageWidth;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        let y = 0;
+        pdf.addImage(imgData, "PNG", 0, y, imgWidth, imgHeight);
+
+        let heightLeft = imgHeight - pageHeight;
+        while (heightLeft > 0){
+          y -= pageHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, "PNG", 0, y, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+
+        pdf.save("COD-Pricing-Plan.pdf");
+        showSuccessMessage(t("msg_pdf_done"), "success");
+
+      } catch(err){
+        console.error(err);
+        showSuccessMessage(t("msg_pdf_error"), "danger");
+      }
+    }
+  </script>
 </body>
 </html>
